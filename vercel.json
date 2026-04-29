@@ -5,9 +5,11 @@
     { "src": "public/**", "use": "@vercel/static" }
   ],
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "src/server.ts" },
     { "source": "/gogoanime/(.*)", "destination": "src/server.ts" },
     { "source": "/aniwatch/(.*)", "destination": "src/server.ts" },
-    { "source": "/api/(.*)", "destination": "src/server.ts" },
+    { "source": "/(.*).html", "destination": "src/server.ts" },
+    { "source": "/", "destination": "src/server.ts" },
     { "source": "/(.*)", "destination": "/public/$1" }
   ]
 }
