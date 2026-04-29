@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My List — AniStream</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="logo.png">
+    <meta name="theme-color" content="#0c0c0e">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav id="navbar">
+        <div style="display:flex;align-items:center;gap:35px;">
+            <a href="index.html" class="logo">AniStream</a>
+            <div class="nav-links">
+                <button onclick="window.location.href='index.html'">Home</button>
+                <button class="active">My List</button>
+            </div>
+        </div>
+        <div class="nav-right">
+                <div id="auth-buttons" style="display:none;">
+                    <button onclick="openLoginModal()" class="signin-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.2);">Log In</button>
+                    <button onclick="openSignupModal()" class="signin-btn">Sign Up</button>
+                </div>
+                <div id="profile-wrapper" class="profile-wrapper" style="display:none;">
+                    <img id="user-avatar" src="" alt="Profile" onclick="toggleProfileDropdown(event)">
+                    <div class="profile-dropdown">
+                        <div class="dropdown-user-info">
+                            <img id="dropdown-avatar" src="" alt="">
+                            <div>
+                                <div class="dropdown-user-name" id="dropdown-name">User</div>
+                                <div class="dropdown-user-email" id="dropdown-email">email@example.com</div>
+                            </div>
+                        </div>
+                        <div class="dropdown-menu-section">
+                            <button class="dropdown-item" onclick="openEditProfile()"><i class="fas fa-user-pen"></i> Edit Profile</button>
+                            <button class="dropdown-item" onclick="openEditProfile('security')"><i class="fas fa-shield-halved"></i> Security</button>
+                            <div class="dropdown-divider"></div>
+                            <button class="dropdown-item logout-item" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Log Out</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+
+    <!-- ENHANCED EDIT PROFILE MODAL -->
+    <div id="edit-profile-modal" class="modal-overlay">
+        <div class="profile-modal-box">
+            <div class="profile-modal-header">
+                <h3><i class="fas fa-user-circle" style="color:var(--primary);margin-right:8px;"></i> My Profile</h3>
+                <button class="profile-modal-close" onclick="closeEditProfile()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="profile-tabs">
+                <button class="profile-tab active" onclick="switchProfileTab('profile-tab-info', this)">Profile</button>
+                <button class="profile-tab" onclick="switchProfileTab('profile-tab-security', this)">Security</button>
+                <button class="profile-tab" onclick="switchProfileTab('profile-tab-account', this)">Account</button>
+            </div>
+            <div id="profile-tab-info" class="profile-tab-content active">
+                <div class="profile-avatar-section">
+                    <img id="profile-avatar-preview" class="profile-avatar-preview" src="" alt="">
+                    <div class="profile-avatar-info">
+                        <div class="avatar-name" id="profile-display-name">User</div>
+                        <div class="avatar-email" id="profile-display-email">email@example.com</div>
+                        <div class="avatar-member"><i class="fas fa-calendar-alt"></i> <span id="profile-member-since">Member since —</span></div>
+                    </div>
+                </div>
+                <div class="profile-field-group">
+                    <label class="profile-field-label">Display Name</label>
+                    <input type="text" id="edit-name" class="modal-input" placeholder="Your display name">
+                </div>
+                <div class="profile-field-group">
+                    <label class="profile-field-label">Avatar URL</label>
+                    <input type="text" id="edit-pic" class="modal-input" placeholder="https://... (paste image URL)" oninput="previewProfileAvatar()">
+                </div>
+                <button class="modal-btn btn-save" style="width:100%;padding:12px;border-radius:10px;margin-top:6px;" onclick="saveProfileChanges()"><i class="fas fa-save" style="margin-right:6px;"></i> Save Changes</button>
+            </div>
+            <div id="profile-tab-security" class="profile-tab-content">
+                <p style="color:#666;font-size:0.85rem;margin-bottom:18px;">Update your password to keep your account secure.</p>
+                <div class="profile-field-group">
+                    <label class="profile-field-label">Current Password</label>
+                    <div class="change-pass-group"><input type="password" id="current-password" class="modal-input" placeholder="Enter current password"><button class="toggle-pass" onclick="togglePassVisibility('current-password', this)"><i class="fas fa-eye"></i></button></div>
+                </div>
+                <div class="profile-field-group">
+                    <label class="profile-field-label">New Password</label>
+                    <div class="change-pass-group"><input type="password" id="new-password" class="modal-input" placeholder="Min 6 characters"><button class="toggle-pass" onclick="togglePassVisibility('new-password', this)"><i class="fas fa-eye"></i></button></div>
+                </div>
+                <div class="profile-field-group">
+                    <label class="profile-field-label">Confirm New Password</label>
+                    <div class="change-pass-group"><input type="password" id="confirm-new-password" class="modal-input" placeholder="Re-enter new password" onkeydown="if(event.key==='Enter')changePassword()"><button class="toggle-pass" onclick="togglePassVisibility('confirm-new-password', this)"><i class="fas fa-eye"></i></button></div>
+                </div>
+                <button class="modal-btn btn-save" style="width:100%;padding:12px;border-radius:10px;margin-top:6px;" onclick="changePassword()"><i class="fas fa-lock" style="margin-right:6px;"></i> Update Password</button>
+            </div>
+            <div id="profile-tab-account" class="profile-tab-content">
+                <div class="profile-field-group">
+                    <label class="profile-field-label">Email Address</label>
+                    <div class="profile-field-readonly" id="account-email">—</div>
+                </div>
+                <div class="profile-field-group">
+                    <label class="profile-field-label">User ID</label>
+                    <div class="profile-field-readonly" id="account-uid" style="font-family:monospace;font-size:0.78rem;">—</div>
+                </div>
+                <div class="profile-account-stats">
+                    <div class="profile-stat-card"><div class="p-stat-val" id="account-mylist-count">—</div><div class="p-stat-lbl">My List</div></div>
+                    <div class="profile-stat-card"><div class="p-stat-val" id="account-history-count">—</div><div class="p-stat-lbl">Watched</div></div>
+                </div>
+                <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.05);">
+                    <button class="modal-btn btn-cancel" style="width:100%;padding:12px;border-radius:10px;color:#ff5050;border:1px solid rgba(229,9,20,0.2);background:rgba(229,9,20,0.05);" onclick="deleteAccount()"><i class="fas fa-trash-alt" style="margin-right:6px;"></i> Delete Account</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HEADER -->
+    <div class="mylist-header-section">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px;">
+            <i class="fas fa-heart" style="color:var(--primary);font-size:1.6rem;"></i>
+            <h1 style="font-family:'Bebas Neue',sans-serif;font-size:3rem;letter-spacing:2px;">My Watchlist</h1>
+        </div>
+        <p style="color:#555;font-size:0.9rem;" id="list-count"></p>
+    </div>
+
+    <div class="main-container" style="padding-top:0;">
+        <!-- FILTER TABS -->
+        <div style="display:flex;gap:8px;margin-bottom:24px;" id="mylist-filter-bar">
+            <button class="genre-chip active" onclick="filterMyList('all', this)">All</button>
+            <button class="genre-chip" onclick="filterMyList('series', this)">Series</button>
+            <button class="genre-chip" onclick="filterMyList('movie', this)">Movies</button>
+        </div>
+
+
+        <!-- EMPTY STATE -->
+        <div id="empty-state" style="display:none; text-align:center; padding:80px 20px;">
+            <i class="fas fa-heart-crack" style="font-size:3rem;color:#333;margin-bottom:20px;display:block;"></i>
+            <h3 style="color:#555;margin-bottom:12px;font-weight:500;">Your list is empty</h3>
+            <p style="color:#333;font-size:0.9rem;margin-bottom:24px;">Go explore and heart some titles!</p>
+            <a href="index.html" class="signin-btn" style="padding:11px 28px;text-decoration:none;font-size:0.92rem;display:inline-block;">Browse Anime</a>
+        </div>
+
+        <!-- GRID -->
+        <div class="grid-wrap" id="mylist-grid">
+            <div class="skeleton anime-card"></div>
+            <div class="skeleton anime-card"></div>
+            <div class="skeleton anime-card"></div>
+            <div class="skeleton anime-card"></div>
+        </div>
+    </div>
+
+    <!-- MOBILE BOTTOM NAV -->
+    <div class="bottom-nav">
+        <button class="nav-item" onclick="window.location.href='index.html'">
+            <i class="fas fa-home"></i><span>Home</span>
+        </button>
+        <button class="nav-item active">
+            <i class="fas fa-heart"></i><span>My List</span>
+        </button>
+        <button class="nav-item" id="mobile-profile-btn" onclick="openMobileProfile()">
+            <i class="fas fa-user-circle"></i><span>Profile</span>
+        </button>
+    </div>
+
+                <script src="script.js?v=3"></script>
+
+    <script>
+        let allMyList = [];
+
+        window.addEventListener('scroll', () => {
+            document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 50);
+        });
+
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                loadMyList(user.uid);
+            }
+        });
+
+        function loadMyList(uid) {
+            const grid = document.getElementById('mylist-grid');
+            db.collection('users').doc(uid).collection('mylist')
+                .orderBy('timestamp', 'desc').get().then(snapshot => {
+                grid.innerHTML = '';
+                allMyList = [];
+                
+                const isIncognito = sessionStorage.getItem('anistream_incognito') === 'active';
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const isAdult = data.is18Plus === true;
+                    if ((isIncognito && isAdult) || (!isIncognito && !isAdult)) {
+                        allMyList.push({ id: doc.id, ...data });
+                    }
+                });
+
+                if (allMyList.length === 0) {
+                    document.getElementById('empty-state').style.display = 'block';
+                    document.getElementById('mylist-filter-bar').style.display = 'none';
+                    document.getElementById('list-count').innerText = '';
+                    renderMyList([]);
+                    return;
+                }
+
+                document.getElementById('empty-state').style.display = 'none';
+                document.getElementById('mylist-filter-bar').style.display = 'flex';
+                document.getElementById('list-count').innerText = `${allMyList.length} title${allMyList.length !== 1 ? 's' : ''} saved`;
+                renderMyList(allMyList);
+            });
+        }
+
+        function renderMyList(items) {
+            const grid = document.getElementById('mylist-grid');
+            grid.innerHTML = '';
+            if (!items.length) {
+                grid.innerHTML = '<p style="color:#555;padding:20px;">No titles in this category.</p>';
+                return;
+            }
+            items.forEach(data => {
+                const card = createNetflixCard(data);
+                grid.appendChild(card);
+            });
+        }
+
+        function filterMyList(type, el) {
+            document.querySelectorAll('#mylist-filter-bar .genre-chip').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+            if (type === 'all') { renderMyList(allMyList); return; }
+            const filtered = allMyList.filter(d => (d.type || 'series').toLowerCase() === type);
+            renderMyList(filtered);
+        }
+    </script>
+</body>
+</html>

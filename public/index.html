@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AniStream - Watch Anime Online</title>
+    <meta name="description" content="Watch the latest anime series and movies online for free on AniStream.">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="logo.png">
+    <meta name="theme-color" content="#0c0c0e">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Bebas+Neue&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <link rel="stylesheet" href="style.css">
+    <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');</script>
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <nav id="navbar">
+        <div style="display:flex;align-items:center;gap:35px;">
+            <a href="index.html" class="logo">AniStream</a>
+            <div class="nav-links">
+                <button onclick="resetHome()" class="active">Home</button>
+                <button onclick="filterContent('series')">Series</button>
+                <button onclick="filterContent('movie')">Movies</button>
+                <button onclick="window.location.href='mylist.html'">My List</button>
+            </div>
+        </div>
+        <div class="nav-right">
+            <button class="search-trigger" onclick="openSearch()" title="Search"><i class="fas fa-search"></i></button>
+            <div id="user-section">
+                <div id="auth-buttons" style="display:none;">
+                    <button onclick="openLoginModal()" class="signin-btn"
+                        style="background:transparent;border:1px solid rgba(255,255,255,0.2);">Log In</button>
+                    <button onclick="openSignupModal()" class="signin-btn">Sign Up</button>
+                </div>
+                <div id="profile-wrapper" class="profile-wrapper" style="display:none;">
+                    <img id="user-avatar" src="" alt="Profile" onclick="toggleProfileDropdown(event)">
+                    <div class="profile-dropdown">
+                        <div class="dropdown-user-info">
+                            <img id="dropdown-avatar" src="" alt="">
+                            <div>
+                                <div class="dropdown-user-name" id="dropdown-name">User</div>
+                                <div class="dropdown-user-email" id="dropdown-email">email@example.com</div>
+                            </div>
+                        </div>
+                        <div class="dropdown-menu-section">
+                            <button class="dropdown-item" onclick="openEditProfile()"><i class="fas fa-user-pen"></i>
+                                Edit Profile</button>
+                            <button class="dropdown-item" onclick="window.location.href='mylist.html'"><i
+                                    class="fas fa-heart"></i> My List</button>
+                            <button class="dropdown-item" onclick="openEditProfile('security')"><i
+                                    class="fas fa-shield-halved"></i> Security</button>
+                            <div class="dropdown-divider"></div>
+                            <button class="dropdown-item logout-item" onclick="logout()"><i
+                                    class="fas fa-sign-out-alt"></i> Log Out</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+
+    <!-- ENHANCED EDIT PROFILE MODAL -->
+    <div id="edit-profile-modal" class="modal-overlay">
+        <div class="profile-modal-box">
+            <div class="profile-modal-header">
+                <h3><i class="fas fa-user-circle" style="color:var(--primary);margin-right:8px;"></i> My Profile</h3>
+                <button class="profile-modal-close" onclick="closeEditProfile()"><i class="fas fa-times"></i></button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="profile-tabs">
+                <button class="profile-tab active" onclick="switchProfileTab('profile-tab-info', this)">Profile</button>
+                <button class="profile-tab" onclick="switchProfileTab('profile-tab-security', this)">Security</button>
+                <button class="profile-tab" onclick="switchProfileTab('profile-tab-account', this)">Account</button>
+            </div>
+
+            <!-- Tab: Profile Info -->
+            <div id="profile-tab-info" class="profile-tab-content active">
+                <div class="profile-avatar-section">
+                    <img id="profile-avatar-preview" class="profile-avatar-preview" src="" alt="">
+                    <div class="profile-avatar-info">
+                        <div class="avatar-name" id="profile-display-name">User</div>
+                        <div class="avatar-email" id="profile-display-email">email@example.com</div>
+                        <div class="avatar-member"><i class="fas fa-calendar-alt"></i> <span
+                                id="profile-member-since">Member since -</span></div>
+                    </div>
+                </div>
+
+                <div class="profile-field-group">
+                    <label class="profile-field-label">Display Name</label>
+                    <input type="text" id="edit-name" class="modal-input" placeholder="Your display name">
+                </div>
+                <div class="profile-field-group">
+                    <label class="profile-field-label">Avatar URL</label>
+                    <input type="text" id="edit-pic" class="modal-input" placeholder="https://... (paste image URL)"
+                        oninput="previewProfileAvatar()">
+                </div>
+                <button class="modal-btn btn-save" style="width:100%;padding:12px;border-radius:10px;margin-top:6px;"
+                    onclick="saveProfileChanges()"><i class="fas fa-save" style="margin-right:6px;"></i> Save
+                    Changes</button>
+            </div>
+
+            <!-- Tab: Security -->
+            <div id="profile-tab-security" class="profile-tab-content">
+                <p style="color:#666;font-size:0.85rem;margin-bottom:18px;">Update your password to keep your account
+                    secure.</p>
+
+                <!-- Incognito Mode Toggle -->
+                <div class="incognito-toggle-section">
+                    <div class="incognito-toggle-row">
+                        <div class="incognito-toggle-info">
+                            <div class="incognito-toggle-label"><i class="fas fa-user-secret"
+                                    style="margin-right:8px;color:#888;"></i>Incognito Mode</div>
+                            <div class="incognito-toggle-desc">Private browsing with restricted content</div>
+                        </div>
+                        <label class="incognito-switch" id="incognito-switch-label">
+                            <input type="checkbox" id="incognito-toggle" onchange="handleIncognitoToggle(this)">
+                            <span class="incognito-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="profile-field-group">
+                    <label class="profile-field-label">Current Password</label>
+                    <div class="change-pass-group">
+                        <input type="password" id="current-password" class="modal-input"
+                            placeholder="Enter current password">
+                        <button class="toggle-pass" onclick="togglePassVisibility('current-password', this)"><i
+                                class="fas fa-eye"></i></button>
+                    </div>
+                </div>
+                <div class="profile-field-group">
+                    <label class="profile-field-label">New Password</label>
+                    <div class="change-pass-group">
+                        <input type="password" id="new-password" class="modal-input" placeholder="Min 6 characters">
+                        <button class="toggle-pass" onclick="togglePassVisibility('new-password', this)"><i
+                                class="fas fa-eye"></i></button>
+                    </div>
+                </div>
+                <div class="profile-field-group">
+                    <label class="profile-field-label">Confirm New Password</label>
+                    <div class="change-pass-group">
+                        <input type="password" id="confirm-new-password" class="modal-input"
+                            placeholder="Re-enter new password" onkeydown="if(event.key==='Enter')changePassword()">
+                        <button class="toggle-pass" onclick="togglePassVisibility('confirm-new-password', this)"><i
+                                class="fas fa-eye"></i></button>
+                    </div>
+                </div>
+                <button class="modal-btn btn-save" style="width:100%;padding:12px;border-radius:10px;margin-top:6px;"
+                    onclick="changePassword()"><i class="fas fa-lock" style="margin-right:6px;"></i> Update
+                    Password</button>
+            </div>
+
+            <!-- Tab: Account -->
+            <div id="profile-tab-account" class="profile-tab-content">
+                <div class="profile-field-group">
+                    <label class="profile-field-label">Email Address</label>
+                    <div class="profile-field-readonly" id="account-email">-</div>
+                </div>
+                <div class="profile-field-group">
+                    <label class="profile-field-label">User ID</label>
+                    <div class="profile-field-readonly" id="account-uid"
+                        style="font-family:monospace;font-size:0.78rem;">-</div>
+                </div>
+
+                <div class="profile-account-stats">
+                    <div class="profile-stat-card">
+                        <div class="p-stat-val" id="account-mylist-count">-</div>
+                        <div class="p-stat-lbl">My List</div>
+                    </div>
+                    <div class="profile-stat-card">
+                        <div class="p-stat-val" id="account-history-count">-</div>
+                        <div class="p-stat-lbl">Watched</div>
+                    </div>
+                </div>
+
+                <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.05);">
+                    <button class="modal-btn btn-cancel"
+                        style="width:100%;padding:12px;border-radius:10px;color:#ff5050;border:1px solid rgba(229,9,20,0.2);background:rgba(229,9,20,0.05);"
+                        onclick="deleteAccount()"><i class="fas fa-trash-alt" style="margin-right:6px;"></i> Delete
+                        Account</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SEARCH OVERLAY -->
+    <div id="search-overlay" class="search-overlay">
+        <div class="search-container">
+            <div class="search-header-bar">
+                <div class="search-input-wrapper">
+                    <i class="fas fa-search search-icon-mobile"></i>
+                    <input type="text" id="search-input" class="search-input" placeholder="Titles, genres...">
+                </div>
+                <button class="close-search-btn" onclick="closeSearch()">Cancel</button>
+            </div>
+            <div class="search-hint" style="margin:12px 0 20px;">Try: <em>Action</em>, <em>Isekai</em>, <em>Romance</em>
+            </div>
+            <div id="search-results-grid" class="grid-wrap search-results-area"></div>
+        </div>
+    </div>
+
+    <!-- HERO -->
+    <div id="hero-section" class="hero-wrapper">
+        <div class="skeleton" style="width:100%;height:100%;border-radius:0;"></div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-container">
+
+        <!-- GENRE FILTER BAR -->
+        <div class="genre-filter-bar" id="genre-bar">
+            <div class="genre-chip" onclick="filterByGenre('Action', this)">&#9889; Action</div>
+            <div class="genre-chip" onclick="filterByGenre('Adventure', this)">&#128506; Adventure</div>
+            <div class="genre-chip" onclick="filterByGenre('Comedy', this)">&#128514; Comedy</div>
+            <div class="genre-chip" onclick="filterByGenre('Drama', this)">&#127917; Drama</div>
+            <div class="genre-chip" onclick="filterByGenre('Fantasy', this)">&#129497; Fantasy</div>
+            <div class="genre-chip" onclick="filterByGenre('Horror', this)">&#128123; Horror</div>
+            <div class="genre-chip" onclick="filterByGenre('Isekai', this)">&#127744; Isekai</div>
+            <div class="genre-chip" onclick="filterByGenre('Mecha', this)">&#129302; Mecha</div>
+            <div class="genre-chip" onclick="filterByGenre('Romance', this)">&#128150; Romance</div>
+            <div class="genre-chip" onclick="filterByGenre('Sci-Fi', this)">&#128640; Sci-Fi</div>
+            <div class="genre-chip" onclick="filterByGenre('Thriller', this)">&#128298; Thriller</div>
+            <div class="genre-chip" onclick="filterByGenre('Supernatural', this)">&#10024; Supernatural</div>
+        </div>
+
+        <div class="home-content-layout">
+            <div class="home-main-column">
+                <!-- CONTINUE WATCHING -->
+                <div id="continue-watching-row" style="display:none;">
+                    <div class="section-header">
+                        <h3 class="section-title">Continue Watching</h3>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <button class="nav-arrow-btn"
+                                onclick="document.getElementById('history-grid').scrollBy({left:-350, behavior:'smooth'})"><i
+                                    class="fas fa-chevron-left"></i></button>
+                            <button class="nav-arrow-btn"
+                                onclick="document.getElementById('history-grid').scrollBy({left:350, behavior:'smooth'})"><i
+                                    class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                    <div class="grid-scroll" id="history-grid"></div>
+                </div>
+
+                <!-- BECAUSE YOU WATCHED -->
+                <div id="recommended-section" style="display:none;">
+                    <div class="section-header">
+                        <h3 class="section-title">Because You <span>Watched</span></h3>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <button class="nav-arrow-btn"
+                                onclick="document.getElementById('recommended-row').scrollBy({left:-350, behavior:'smooth'})"><i
+                                    class="fas fa-chevron-left"></i></button>
+                            <button class="nav-arrow-btn"
+                                onclick="document.getElementById('recommended-row').scrollBy({left:350, behavior:'smooth'})"><i
+                                    class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                    <div class="grid-scroll" id="recommended-row"></div>
+                </div>
+
+                <!-- TRENDING -->
+                <div id="main-section">
+                    <div class="section-header">
+                        <h3 class="section-title" id="row-title">Trending Picks</h3>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <button class="nav-arrow-btn"
+                                onclick="document.getElementById('anime-row').scrollBy({left:-350, behavior:'smooth'})"><i
+                                    class="fas fa-chevron-left"></i></button>
+                            <button class="nav-arrow-btn"
+                                onclick="document.getElementById('anime-row').scrollBy({left:350, behavior:'smooth'})"><i
+                                    class="fas fa-chevron-right"></i></button>
+                            <button class="see-all-btn" onclick="seeAll('all')" style="margin-left:12px;">See All <i
+                                    class="fas fa-chevron-right" style="font-size:0.75rem;"></i></button>
+                        </div>
+                    </div>
+                    <div class="grid-scroll" id="anime-row"></div>
+                </div>
+
+                <!-- SERIES -->
+                <div id="series-section">
+                    <div class="section-header">
+                        <h3 class="section-title" id="series-title">Top <span>Series</span></h3>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <button class="nav-arrow-btn"
+                                onclick="document.getElementById('series-row').scrollBy({left:-350, behavior:'smooth'})"><i
+                                    class="fas fa-chevron-left"></i></button>
+                            <button class="nav-arrow-btn"
+                                onclick="document.getElementById('series-row').scrollBy({left:350, behavior:'smooth'})"><i
+                                    class="fas fa-chevron-right"></i></button>
+                            <button class="see-all-btn" onclick="seeAll('series')" style="margin-left:12px;">See All <i
+                                    class="fas fa-chevron-right" style="font-size:0.75rem;"></i></button>
+                        </div>
+                    </div>
+                    <div class="grid-scroll" id="series-row"></div>
+                </div>
+
+                <!-- MOVIES -->
+                <div id="movie-section">
+                    <div class="section-header">
+                        <h3 class="section-title" id="movie-title">Top <span>Movies</span></h3>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <button class="nav-arrow-btn"
+                                onclick="document.getElementById('movie-row').scrollBy({left:-350, behavior:'smooth'})"><i
+                                    class="fas fa-chevron-left"></i></button>
+                            <button class="nav-arrow-btn"
+                                onclick="document.getElementById('movie-row').scrollBy({left:350, behavior:'smooth'})"><i
+                                    class="fas fa-chevron-right"></i></button>
+                            <button class="see-all-btn" onclick="seeAll('movie')" style="margin-left:12px;">See All <i
+                                    class="fas fa-chevron-right" style="font-size:0.75rem;"></i></button>
+                        </div>
+                    </div>
+                    <div class="grid-scroll" id="movie-row"></div>
+                </div>
+
+                <!-- FRESH DROPS -->
+                <div id="fresh-section">
+                    <div class="section-header">
+                        <h3 class="section-title">Fresh <span>Drops</span></h3>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <button class="nav-arrow-btn"
+                                onclick="document.getElementById('fresh-row').scrollBy({left:-350, behavior:'smooth'})"><i
+                                    class="fas fa-chevron-left"></i></button>
+                            <button class="nav-arrow-btn"
+                                onclick="document.getElementById('fresh-row').scrollBy({left:350, behavior:'smooth'})"><i
+                                    class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                    <div class="grid-scroll" id="fresh-row"></div>
+                </div>
+
+                <!-- HIDDEN GEMS -->
+                <div id="gems-section">
+                    <div class="section-header">
+                        <h3 class="section-title">Hidden <span>Gems</span></h3>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <button class="nav-arrow-btn"
+                                onclick="document.getElementById('gems-row').scrollBy({left:-350, behavior:'smooth'})"><i
+                                    class="fas fa-chevron-left"></i></button>
+                            <button class="nav-arrow-btn"
+                                onclick="document.getElementById('gems-row').scrollBy({left:350, behavior:'smooth'})"><i
+                                    class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                    <div class="grid-scroll" id="gems-row"></div>
+                </div>
+            </div>
+
+            <aside class="home-sidebar" id="most-viewed-sidebar">
+                <div class="sidebar-panel">
+                    <div class="sidebar-module" id="sidebar-most-viewed-module">
+                        <div class="sidebar-panel-head">
+                            <p class="sidebar-panel-kicker">Spotlight</p>
+                            <h3>Most Viewed</h3>
+                        </div>
+                        <div class="most-viewed-list" id="most-viewed-list"></div>
+                    </div>
+                    <div class="sidebar-divider"></div>
+                    <div class="sidebar-module" id="sidebar-fresh-module">
+                        <div class="sidebar-panel-head sidebar-subsection-head">
+                            <p class="sidebar-panel-kicker">Just In</p>
+                            <h3>Fresh Picks</h3>
+                        </div>
+                        <div class="sidebar-picks-list" id="sidebar-fresh-list"></div>
+                    </div>
+                    <div class="sidebar-divider"></div>
+                    <div class="sidebar-module" id="sidebar-top-rated-module">
+                        <div class="sidebar-panel-head sidebar-subsection-head">
+                            <p class="sidebar-panel-kicker">Fan Favorite</p>
+                            <h3>Top Rated</h3>
+                        </div>
+                        <div class="most-viewed-list" id="sidebar-top-rated-list"></div>
+                    </div>
+                    <div class="sidebar-divider"></div>
+                    <div class="sidebar-module" id="sidebar-genres-module">
+                        <div class="sidebar-panel-head sidebar-subsection-head">
+                            <p class="sidebar-panel-kicker">Explore</p>
+                            <h3>Popular Genres</h3>
+                        </div>
+                        <div class="sidebar-genre-list" id="sidebar-genre-list"></div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+    </div>
+
+    <footer class="home-footer">
+        <div class="footer-mini">
+            <div class="footer-mini-brand">AniStream</div>
+            <!-- <div class="footer-mini-links">
+                <a href="index.html">Home</a>
+                <a href="request.html">Request</a>
+                <a href="mylist.html">My List</a>
+            </div> -->
+            <div class="footer-mini-copy">Made with <span class="footer-heart">&#10084;</span> by <strong
+                    class="footer-creator">AMBESH SINGH</strong></div>
+        </div>
+    </footer>
+
+    <!-- MOBILE BOTTOM NAV -->
+    <div class="bottom-nav">
+        <button class="nav-item active" onclick="window.location.href='index.html'">
+            <i class="fas fa-home"></i><span>Home</span>
+        </button>
+        <button class="nav-item" onclick="openSearch()">
+            <i class="fas fa-search"></i><span>Search</span>
+        </button>
+        <button class="nav-item request-link" onclick="window.location.href='request.html'">
+            <i class="fas fa-film"></i><span>Request</span>
+        </button>
+        <button class="nav-item" onclick="window.location.href='mylist.html'">
+            <i class="fas fa-heart"></i><span>My List</span>
+        </button>
+        <button class="nav-item" id="mobile-profile-btn" onclick="openMobileProfile()">
+            <i class="fas fa-user-circle"></i><span>Profile</span>
+        </button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+    <!-- INCOGNITO PASSWORD MODAL -->
+    <div id="incognito-modal" class="modal-overlay">
+        <div class="incognito-modal-box">
+            <div class="incognito-modal-icon">
+                <i class="fas fa-user-secret"></i>
+            </div>
+            <h3 class="incognito-modal-title">Enter Access Code</h3>
+            <p class="incognito-modal-desc">Enter your 6-digit passcode to continue</p>
+            <div class="incognito-pin-container" id="incognito-pin-container">
+                <input type="password" maxlength="1" class="incognito-pin-input" data-index="0" inputmode="numeric"
+                    pattern="[0-9]" autocomplete="off">
+                <input type="password" maxlength="1" class="incognito-pin-input" data-index="1" inputmode="numeric"
+                    pattern="[0-9]" autocomplete="off">
+                <input type="password" maxlength="1" class="incognito-pin-input" data-index="2" inputmode="numeric"
+                    pattern="[0-9]" autocomplete="off">
+                <input type="password" maxlength="1" class="incognito-pin-input" data-index="3" inputmode="numeric"
+                    pattern="[0-9]" autocomplete="off">
+                <input type="password" maxlength="1" class="incognito-pin-input" data-index="4" inputmode="numeric"
+                    pattern="[0-9]" autocomplete="off">
+                <input type="password" maxlength="1" class="incognito-pin-input" data-index="5" inputmode="numeric"
+                    pattern="[0-9]" autocomplete="off">
+            </div>
+            <div class="incognito-error" id="incognito-error" style="display:none;">
+                <i class="fas fa-exclamation-triangle"></i> Incorrect passcode
+            </div>
+            <div class="incognito-modal-actions">
+                <button class="modal-btn btn-cancel" onclick="closeIncognitoModal()"
+                    style="flex:1;padding:12px;border-radius:10px;">Cancel</button>
+                <button class="modal-btn btn-save incognito-confirm-btn" onclick="confirmIncognitoCode()"
+                    style="flex:1;padding:12px;border-radius:10px;">
+                    <i class="fas fa-lock-open" style="margin-right:6px;"></i>Unlock
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js?v=6"></script>
+    <script>
+        window.addEventListener('scroll', () => {
+            document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 50);
+        });
+        function openSearch() {
+            document.getElementById('search-overlay').classList.add('active');
+            setTimeout(() => document.getElementById('search-input')?.focus(), 100);
+        }
+        function closeSearch() {
+            document.getElementById('search-overlay').classList.remove('active');
+            document.getElementById('search-results-grid').innerHTML = '';
+            document.getElementById('search-input').value = '';
+        }
+    </script>
+</body>
+
+</html>
