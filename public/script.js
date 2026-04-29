@@ -3,7 +3,11 @@
 const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '3000' ? 'http://localhost:3000' : window.location.origin;
 async function getJson(endpoint, fallback) { 
     try { 
-        const r = await fetch(API_BASE + endpoint); 
+        // Cache busting for API calls
+        const url = new URL(API_BASE + endpoint);
+        url.searchParams.append('v', '1.1.0');
+        
+        const r = await fetch(url.toString()); 
         if(!r.ok) throw new Error(); 
         return await r.json(); 
     } catch(e) { 
