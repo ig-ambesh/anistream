@@ -10,40 +10,26 @@ const cleanName = (name: string) => {
         .replace(/TV/gi, '')
         .replace(/Season \d+/gi, '')
         .replace(/S\d+/gi, '')
+        .replace(/:/g, ' ')
+        .replace(/-/g, ' ')
         .trim();
 };
 
 /**
- * AniList Helper (Fast & Reliable for Lists)
+ * Enhanced Search with Retry
  */
-const fetchFromAniList = async (query: string) => {
-    const graphqlQuery = `
-    query ($search: String) {
-      Media (search: $search, type: ANIME) {
-        description
-        bannerImage
-        coverImage { extraLarge }
-        averageScore
-      }
-    }`;
-    
+const aggressiveSearch = async (query: string, retries = 2): Promise<any> => {
     try {
-        const response = await axios.post('https://graphql.anilist.co', {
-            query: graphqlQuery,
-            variables: { search: query }
-        }, { timeout: 3000 });
+        const results = await searchAnimeOnTMDB(query);
+        if (results && results.length > 0) return results[0];
         
-        const media = response.data.data.Media;
-        if (media) {
-            return {
-                banner: media.bannerImage,
-                poster: media.coverImage.extraLarge,
-                description: media.description?.replace(/<[^>]*>?/gm, ''), 
-                rating: (media.averageScore / 10).toFixed(1)
-            };
+        // If no results, try with a even cleaner name
+        if (retries > 0) {
+            const cleaner = query.split(' ').slice(0, 3).join(' '); // Try just the first 3 words
+            return await aggressiveSearch(cleaner, retries - 1);
         }
     } catch (e) {
-        return null;
+        if (retries > 0) return await aggressiveSearch(query, retries - 1);
     }
     return null;
 };
@@ -52,7 +38,6 @@ export const enrichWithTMDB = async (animeList: any[]) => {
     if (!Array.isArray(animeList)) return animeList;
 
     const enrichedList = [];
-    // Process in smaller batches to avoid Vercel connection limits
     for (const anime of animeList) {
         const animeName = anime.name || anime.title;
         if (!animeName) {
@@ -67,20 +52,24 @@ export const enrichWithTMDB = async (animeList: any[]) => {
 
         const clean = cleanName(animeName);
         
-        // Use AniList for LIST VIEW (Faster, more reliable banners)
-        const aniData = await fetchFromAniList(clean);
-        if (aniData) {
-            const data = {
-                banner: aniData.banner || anime.img || anime.image,
-                poster: aniData.poster || anime.img || anime.image,
-                tmdbRating: aniData.rating,
-                description: aniData.description || anime.plotSummary || anime.description
-            };
-            metadataCache.set(animeName, data);
-            enrichedList.push({ ...anime, ...data });
-        } else {
-            enrichedList.push(anime);
-        }
+        // FORCING TMDB
+        try {
+            const match = await aggressiveSearch(clean);
+            if (match) {
+                const data = {
+                    tmdbId: match.id,
+                    tmdbRating: match.vote_average,
+                    banner: match.backdrop_path ? `https://image.tmdb.org/t/p/original${match.backdrop_path}` : (anime.img || anime.image),
+                    poster: match.poster_path ? `https://image.tmdb.org/t/p/w500${match.poster_path}` : (anime.img || anime.image),
+                    description: match.overview || anime.plotSummary || anime.description
+                };
+                metadataCache.set(animeName, data);
+                enrichedList.push({ ...anime, ...data });
+                continue;
+            }
+        } catch (e) {}
+
+        enrichedList.push(anime);
     }
     return enrichedList;
 };
@@ -88,13 +77,10 @@ export const enrichWithTMDB = async (animeList: any[]) => {
 export const enrichSingleWithTMDB = async (anime: any) => {
     if (!anime || !anime.name) return anime;
     const clean = cleanName(anime.name);
-    console.log(`🔍 Single Enrichment: ${anime.name}`);
 
-    // Try TMDB for maximum detail (Logos, Cast, Trailers)
     try {
-        const results = await searchAnimeOnTMDB(clean);
-        if (results && results.length > 0) {
-            const match = results[0];
+        const match = await aggressiveSearch(clean);
+        if (match) {
             const details = await getTMDBDetails(match.id, match.media_type as 'tv' | 'movie');
             
             if (details) {
@@ -102,7 +88,7 @@ export const enrichSingleWithTMDB = async (anime: any) => {
                 if (match.media_type === 'tv' && details.seasons) {
                     try {
                         let allTmdbEpisodes: any[] = [];
-                        const totalSeasons = Math.min(details.number_of_seasons, 5); // Limit for speed
+                        const totalSeasons = Math.min(details.number_of_seasons, 8); 
                         for (let s = 1; s <= totalSeasons; s++) {
                             const res = await tmdb.get(`/tv/${match.id}/season/${s}`).catch(() => null);
                             if (res?.data?.episodes) allTmdbEpisodes = [...allTmdbEpisodes, ...res.data.episodes];
@@ -123,7 +109,7 @@ export const enrichSingleWithTMDB = async (anime: any) => {
                     ...anime,
                     tmdbId: details.id,
                     tmdbRating: details.vote_average,
-                    banner: details.backdrop_path ? `https://image.tmdb.org/t/p/original${details.backdrop_path}` : anime.banner,
+                    banner: details.backdrop_path ? `https://image.tmdb.org/t/p/original${details.backdrop_path}` : (anime.banner || anime.img),
                     poster: details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : anime.img,
                     logo: details.images?.logos?.[0]?.file_path ? `https://image.tmdb.org/t/p/original${details.images.logos[0].file_path}` : null,
                     description: details.overview || anime.plotSummary,
@@ -138,18 +124,6 @@ export const enrichSingleWithTMDB = async (anime: any) => {
             }
         }
     } catch (error) {}
-
-    // Fallback to AniList
-    const aniData = await fetchFromAniList(clean);
-    if (aniData) {
-        return {
-            ...anime,
-            banner: aniData.banner || anime.img,
-            poster: aniData.poster || anime.img,
-            description: aniData.description || anime.plotSummary,
-            tmdbRating: aniData.rating
-        };
-    }
 
     return anime;
 };
