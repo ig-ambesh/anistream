@@ -58,6 +58,7 @@ export const getTMDBDetails = async (id: string, type: 'tv' | 'movie' = 'tv') =>
         const response = await tmdb.get(`/${type}/${id}`, {
             params: {
                 append_to_response: 'videos,images,credits,external_ids',
+                include_image_language: 'en,null' // Get English logos
             },
         });
         return response.data;
