@@ -9,7 +9,7 @@ config();
 
 const app = express();
 const PORT = process.env.PORT ?? 3001;
-const APP_VERSION = "1.4.0"; 
+const APP_VERSION = "1.5.0"; 
 
 // Use process.cwd() for reliable paths on Vercel
 const PUBLIC_DIR = path.join(process.cwd(), "public");
