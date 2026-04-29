@@ -14,31 +14,16 @@ const cleanName = (name: string) => {
 };
 
 /**
- * AniList Fallback
+ * AniList Helper (Fast & Reliable for Lists)
  */
 const fetchFromAniList = async (query: string) => {
     const graphqlQuery = `
     query ($search: String) {
       Media (search: $search, type: ANIME) {
-        id
         description
         bannerImage
-        coverImage { extraLarge large }
+        coverImage { extraLarge }
         averageScore
-        genres
-        status
-        seasonYear
-        title { english romaji }
-        trailer { site id }
-        characters (sort: [ROLE, RELEVANCE], perPage: 12) {
-          edges {
-            role
-            node {
-              name { full }
-              image { medium }
-            }
-          }
-        }
       }
     }`;
     
@@ -46,24 +31,15 @@ const fetchFromAniList = async (query: string) => {
         const response = await axios.post('https://graphql.anilist.co', {
             query: graphqlQuery,
             variables: { search: query }
-        }, { timeout: 4000 });
+        }, { timeout: 3000 });
         
         const media = response.data.data.Media;
         if (media) {
             return {
                 banner: media.bannerImage,
-                poster: media.coverImage.extraLarge || media.coverImage.large,
+                poster: media.coverImage.extraLarge,
                 description: media.description?.replace(/<[^>]*>?/gm, ''), 
-                rating: (media.averageScore / 10).toFixed(1),
-                genres: media.genres,
-                year: media.seasonYear,
-                status: media.status?.toLowerCase(),
-                trailer: media.trailer?.site === 'youtube' ? `https://www.youtube.com/watch?v=${media.trailer.id}` : null,
-                cast: media.characters?.edges?.map((edge: any) => ({
-                    name: edge.node.name.full,
-                    photo: edge.node.image.medium,
-                    character: edge.role 
-                })) || []
+                rating: (media.averageScore / 10).toFixed(1)
             };
         }
     } catch (e) {
@@ -75,62 +51,47 @@ const fetchFromAniList = async (query: string) => {
 export const enrichWithTMDB = async (animeList: any[]) => {
     if (!Array.isArray(animeList)) return animeList;
 
-    return await Promise.all(
-        animeList.map(async (anime) => {
-            const animeName = anime.name;
-            if (!animeName) return anime;
-            if (metadataCache.has(animeName)) return { ...anime, ...metadataCache.get(animeName) };
+    const enrichedList = [];
+    // Process in smaller batches to avoid Vercel connection limits
+    for (const anime of animeList) {
+        const animeName = anime.name || anime.title;
+        if (!animeName) {
+            enrichedList.push(anime);
+            continue;
+        }
 
-            const clean = cleanName(animeName);
-            
-            // Try TMDB FIRST (User wants to force TMDB)
-            try {
-                const results: any = await Promise.race([
-                    searchAnimeOnTMDB(clean),
-                    new Promise((_, reject) => setTimeout(() => reject('timeout'), 3500))
-                ]);
+        if (metadataCache.has(animeName)) {
+            enrichedList.push({ ...anime, ...metadataCache.get(animeName) });
+            continue;
+        }
 
-                if (results && results.length > 0) {
-                    const match = results[0];
-                    const tmdbData = {
-                        tmdbId: match.id,
-                        tmdbRating: match.vote_average,
-                        banner: match.backdrop_path ? `https://image.tmdb.org/t/p/original${match.backdrop_path}` : null,
-                        poster: match.poster_path ? `https://image.tmdb.org/t/p/w500${match.poster_path}` : anime.img,
-                        description: match.overview || anime.plotSummary,
-                    };
-                    metadataCache.set(animeName, tmdbData);
-                    return { ...anime, ...tmdbData };
-                }
-            } catch (error) {}
-
-            // Fallback to AniList
-            const aniData = await fetchFromAniList(clean);
-            if (aniData) {
-                const enriched = {
-                    ...anime,
-                    banner: aniData.banner || anime.img,
-                    poster: aniData.poster || anime.img,
-                    description: aniData.description || anime.plotSummary,
-                    tmdbRating: aniData.rating,
-                    genres: aniData.genres || anime.genre?.split(', ')
-                };
-                metadataCache.set(animeName, enriched);
-                return enriched;
-            }
-
-            return anime;
-        })
-    );
+        const clean = cleanName(animeName);
+        
+        // Use AniList for LIST VIEW (Faster, more reliable banners)
+        const aniData = await fetchFromAniList(clean);
+        if (aniData) {
+            const data = {
+                banner: aniData.banner || anime.img || anime.image,
+                poster: aniData.poster || anime.img || anime.image,
+                tmdbRating: aniData.rating,
+                description: aniData.description || anime.plotSummary || anime.description
+            };
+            metadataCache.set(animeName, data);
+            enrichedList.push({ ...anime, ...data });
+        } else {
+            enrichedList.push(anime);
+        }
+    }
+    return enrichedList;
 };
 
 export const enrichSingleWithTMDB = async (anime: any) => {
     if (!anime || !anime.name) return anime;
     const clean = cleanName(anime.name);
-    console.log(`🔍 Forcing Aggressive TMDB Enrichment for: ${anime.name}`);
+    console.log(`🔍 Single Enrichment: ${anime.name}`);
 
+    // Try TMDB for maximum detail (Logos, Cast, Trailers)
     try {
-        // 1. Aggressive TMDB Search
         const results = await searchAnimeOnTMDB(clean);
         if (results && results.length > 0) {
             const match = results[0];
@@ -138,27 +99,14 @@ export const enrichSingleWithTMDB = async (anime: any) => {
             
             if (details) {
                 let episodesWithThumbs = anime.episodes || [];
-                
-                // Aggressive Multi-Season Episode Fetching
                 if (match.media_type === 'tv' && details.seasons) {
                     try {
                         let allTmdbEpisodes: any[] = [];
-                        const totalSeasons = details.number_of_seasons;
-                        
-                        // Fetch EVERY available season to ensure 100% thumbnail coverage
-                        const seasonPromises = [];
+                        const totalSeasons = Math.min(details.number_of_seasons, 5); // Limit for speed
                         for (let s = 1; s <= totalSeasons; s++) {
-                            seasonPromises.push(tmdb.get(`/tv/${match.id}/season/${s}`).catch(() => null));
+                            const res = await tmdb.get(`/tv/${match.id}/season/${s}`).catch(() => null);
+                            if (res?.data?.episodes) allTmdbEpisodes = [...allTmdbEpisodes, ...res.data.episodes];
                         }
-                        
-                        const seasonResults = await Promise.all(seasonPromises);
-                        seasonResults.forEach(res => {
-                            if (res && res.data && res.data.episodes) {
-                                allTmdbEpisodes = [...allTmdbEpisodes, ...res.data.episodes];
-                            }
-                        });
-
-                        console.log(`✅ Successfully fetched ${allTmdbEpisodes.length} episodes from ${totalSeasons} TMDB seasons.`);
 
                         episodesWithThumbs = (anime.episodes || []).map((ep: any, index: number) => {
                             const tmdbEp = allTmdbEpisodes[index];
@@ -168,20 +116,17 @@ export const enrichSingleWithTMDB = async (anime: any) => {
                                 overview: tmdbEp?.overview || ''
                             };
                         });
-                    } catch (e) {
-                        console.error("❌ Episode thumbnails fetch failed.");
-                    }
+                    } catch (e) {}
                 }
 
                 return {
                     ...anime,
                     tmdbId: details.id,
                     tmdbRating: details.vote_average,
-                    banner: details.backdrop_path ? `https://image.tmdb.org/t/p/original${details.backdrop_path}` : null,
+                    banner: details.backdrop_path ? `https://image.tmdb.org/t/p/original${details.backdrop_path}` : anime.banner,
                     poster: details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : anime.img,
                     logo: details.images?.logos?.[0]?.file_path ? `https://image.tmdb.org/t/p/original${details.images.logos[0].file_path}` : null,
                     description: details.overview || anime.plotSummary,
-                    genres: details.genres?.map((g: any) => g.name) || anime.genre?.split(', '),
                     cast: details.credits?.cast?.slice(0, 15).map((c: any) => ({
                         name: c.name,
                         character: c.character,
@@ -192,11 +137,9 @@ export const enrichSingleWithTMDB = async (anime: any) => {
                 };
             }
         }
-    } catch (error) {
-        console.error("❌ TMDB Main Enrichment Failed.");
-    }
+    } catch (error) {}
 
-    // Secondary Fallback only if TMDB fails completely
+    // Fallback to AniList
     const aniData = await fetchFromAniList(clean);
     if (aniData) {
         return {
@@ -204,12 +147,7 @@ export const enrichSingleWithTMDB = async (anime: any) => {
             banner: aniData.banner || anime.img,
             poster: aniData.poster || anime.img,
             description: aniData.description || anime.plotSummary,
-            tmdbRating: aniData.rating,
-            genres: aniData.genres || anime.genre?.split(', '),
-            status: aniData.status || anime.status,
-            year: aniData.year || anime.year,
-            trailer: aniData.trailer || anime.trailer,
-            cast: aniData.cast || []
+            tmdbRating: aniData.rating
         };
     }
 
