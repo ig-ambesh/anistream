@@ -9,14 +9,18 @@ config();
 
 const app = express();
 const PORT = process.env.PORT ?? 3001;
-const APP_VERSION = "1.2.0"; // 👈 CHANGE THIS ONE TIME TO UPDATE EVERYTHING
+const APP_VERSION = "1.2.0"; 
+
+// Use process.cwd() for reliable paths on Vercel
+const PUBLIC_DIR = path.join(process.cwd(), "public");
 
 // Middleware to inject versioning into HTML files automatically
 app.get("/*.html", (req, res, next) => {
-    const filePath = path.join(__dirname, "../public", req.path);
+    const fileName = req.path === "/" ? "index.html" : req.path;
+    const filePath = path.join(PUBLIC_DIR, fileName);
+    
     if (fs.existsSync(filePath)) {
         let content = fs.readFileSync(filePath, "utf8");
-        // Automatically replace any asset links with the current version
         content = content.replace(/href="style.css[^"]*"/g, `href="style.css?v=${APP_VERSION}"`);
         content = content.replace(/src="script.js[^"]*"/g, `src="script.js?v=${APP_VERSION}"`);
         content = content.replace(/src="app.js[^"]*"/g, `src="app.js?v=${APP_VERSION}"`);
@@ -25,13 +29,16 @@ app.get("/*.html", (req, res, next) => {
     next();
 });
 
-// Serve the main index.html for the root path with versioning
+// Serve the main index.html for the root path
 app.get("/", (req, res) => {
-    const filePath = path.join(__dirname, "../public/index.html");
-    let content = fs.readFileSync(filePath, "utf8");
-    content = content.replace(/href="style.css[^"]*"/g, `href="style.css?v=${APP_VERSION}"`);
-    content = content.replace(/src="script.js[^"]*"/g, `src="script.js?v=${APP_VERSION}"`);
-    return res.send(content);
+    const filePath = path.join(PUBLIC_DIR, "index.html");
+    if (fs.existsSync(filePath)) {
+        let content = fs.readFileSync(filePath, "utf8");
+        content = content.replace(/href="style.css[^"]*"/g, `href="style.css?v=${APP_VERSION}"`);
+        content = content.replace(/src="script.js[^"]*"/g, `src="script.js?v=${APP_VERSION}"`);
+        return res.send(content);
+    }
+    res.status(404).send("Index not found");
 });
 
 app.use(limiter);
