@@ -9,7 +9,7 @@ config();
 
 const app = express();
 const PORT = process.env.PORT ?? 3001;
-const APP_VERSION = "1.3.0"; 
+const APP_VERSION = "1.4.0"; 
 
 // Use process.cwd() for reliable paths on Vercel
 const PUBLIC_DIR = path.join(process.cwd(), "public");
@@ -18,7 +18,7 @@ const PUBLIC_DIR = path.join(process.cwd(), "public");
 app.get("/*.html", (req, res, next) => {
     const fileName = req.path === "/" ? "index.html" : req.path;
     const filePath = path.join(PUBLIC_DIR, fileName);
-    
+
     if (fs.existsSync(filePath)) {
         let content = fs.readFileSync(filePath, "utf8");
         content = content.replace(/href="style.css[^"]*"/g, `href="style.css?v=${APP_VERSION}"`);
