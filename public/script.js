@@ -1259,14 +1259,11 @@ function setupPlayer(content, id, startSeason=0, startEp=0) {
     const vp = document.getElementById('video-player');
     const epTitle = document.getElementById('ep-title');
 
-    // Reset layout for every setup
+    // Use CSS for layout instead of hardcoded JS styles
     const container = document.querySelector('.watch-container');
-    if (container) container.style.gridTemplateColumns = '300px 1fr 320px';
     const leftSidebar = document.querySelector('.ep-sidebar');
     const rightSidebar = document.querySelector('.info-sidebar');
-    if (leftSidebar) leftSidebar.style.display = 'flex';
-    if (rightSidebar) rightSidebar.style.display = 'block';
-
+    
     if ((content.type || '').toLowerCase() === 'movie') {
         const disclaimer = document.getElementById('player-disclaimer');
         const mUrl = (content.videoUrl || '').trim();
