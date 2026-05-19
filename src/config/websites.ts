@@ -9,14 +9,15 @@ export type AnimeWebsiteConfig = WebsiteConfig & {
 type Websites = Record<string, AnimeWebsiteConfig>;
 
 // anime websites and their clones
+// NOTE (May 2026): HiAnime/AniWatch shut down March 2026. All domains are dead.
+// GogoAnime anitaku.to redirected to anineko.to (incompatible HTML structure).
+// gogoanimes.fi mirrors retain the original GogoAnime HTML structure.
 export const websites_collection: Websites = {
-  "AniWatch": {
-    BASE: "https://aniwatchtv.to",
-    CLONES: {
-      "HiAnime": ["https://hianime.to", "https://hianime.nz", "https://hianime.sx"],
-    }
-  },
   "GogoAnime": {
-    BASE: "https://anitaku.to",
+    BASE: "https://ww5.gogoanimes.fi",
+    CLONES: {
+      "GogoAnimesFi": ["https://ww6.gogoanimes.fi", "https://ww4.gogoanimes.fi", "https://ww3.gogoanimes.fi", "https://gogoanimes.fi"],
+      "Gogoanime3": ["https://gogoanime3.co"]
+    }
   }
 }

@@ -15,7 +15,10 @@ export const extract_new_seasons = (
         $(element).find('p.name > a')?.attr('href')?.split('/')[2] ?? "UNKNOWN";
       const animeNAME =
         $(element).find("p.name > a")?.attr("title") ?? "UNKNOWN";
-      const animeIMG = $(element).find('div > a > img').attr('src') ?? "UNKNOWN";
+      let animeIMG = $(element).find('div > a > img').attr('src') ?? "UNKNOWN";
+      if (animeIMG.startsWith("/")) {
+        animeIMG = url_base + animeIMG;
+      }
       const releasedDate = $(element).find('p.released').text().replace('Released: ', '').trim();
       const animeUrl = url_base + '/' + $(element).find('p.name > a').attr('href');
 

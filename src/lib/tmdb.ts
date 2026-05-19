@@ -5,7 +5,7 @@ import https from 'https';
 dotenv.config();
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3'; 
+const TMDB_BASE_URL = 'https://api.tmdb.org/3'; 
 
 if (!TMDB_API_KEY) {
     console.error('❌ TMDB_API_KEY not found in .env file!');
@@ -74,6 +74,57 @@ export const getTMDBTrending = async (type: 'tv' | 'movie' = 'tv') => {
         return response.data.results;
     } catch (error) {
         console.error('Error getting TMDB trending:', error);
+        return [];
+    }
+};
+
+export const getAnimeTrending = async () => {
+    try {
+        const response = await tmdb.get(`/discover/tv`, {
+            params: {
+                with_genres: 16,
+                with_keywords: 210024,
+                sort_by: 'popularity.desc'
+            }
+        });
+        return response.data.results;
+    } catch (error) {
+        console.error('Error getting Anime Trending:', error);
+        return [];
+    }
+};
+
+export const getAnimeNewReleases = async () => {
+    try {
+        const response = await tmdb.get(`/discover/tv`, {
+            params: {
+                with_genres: 16,
+                with_keywords: 210024,
+                sort_by: 'first_air_date.desc',
+                'air_date.lte': new Date().toISOString().split('T')[0],
+                'vote_count.gte': 5
+            }
+        });
+        return response.data.results;
+    } catch (error) {
+        console.error('Error getting Anime New Releases:', error);
+        return [];
+    }
+};
+
+export const getAnimeHighRated = async () => {
+    try {
+        const response = await tmdb.get(`/discover/tv`, {
+            params: {
+                with_genres: 16,
+                with_keywords: 210024,
+                sort_by: 'vote_average.desc',
+                'vote_count.gte': 300
+            }
+        });
+        return response.data.results;
+    } catch (error) {
+        console.error('Error getting Anime High Rated:', error);
         return [];
     }
 };

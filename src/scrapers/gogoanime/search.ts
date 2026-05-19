@@ -36,10 +36,15 @@ export const scrapeSearchPage = async (
       const img = $(el).find("div.img a img");
       const released = $(el).find("p.released").text().trim();
 
+      let imgSrc = img.attr("src") || null;
+      if (imgSrc && imgSrc.startsWith("/")) {
+        imgSrc = URLs.BASE + imgSrc;
+      }
+
       res.animes.push({
         id: a.attr("href")?.split("/category/")[1] || null,
         name: a.attr("title") || null,
-        img: img.attr("src") || null,
+        img: imgSrc,
         releasedYear: released.replace("Released:", "").trim(),
         animeUrl: URLs.BASE + a.attr("href"),
       });

@@ -38,7 +38,7 @@ const makeGogoAnimeObj = (gogoanime_base: string): GogoAnimeConfig => {
   // Testing
   // console.log(gogoanime_base);
   return {
-    BASE: gogoanime.BASE,
+    BASE: gogoanime_base,
     SEARCH: `${gogoanime_base}/search.html`,
     CATEGORY: `${gogoanime_base}/category/`,
     MOVIES: `${gogoanime_base}/anime-movies.html`,
@@ -49,19 +49,33 @@ const makeGogoAnimeObj = (gogoanime_base: string): GogoAnimeConfig => {
   }
 }
 
+let cached_gogoanime_base: string | null = null;
+let last_resolved_time = 0;
+const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
+
 // return fn
 const URL_fn = async (): Promise<GogoAnimeConfig> => {
+  const now = Date.now();
+  if (cached_gogoanime_base && (now - last_resolved_time < CACHE_DURATION)) {
+    return makeGogoAnimeObj(cached_gogoanime_base);
+  }
+
   try {
     for (const url of clones_array) {
       if (await isSiteReachable(url as string)) {
+        cached_gogoanime_base = url;
+        last_resolved_time = now;
         gogoanime_base = url;
+        console.log(`[GogoAnime] Resolved and cached working domain: ${url}`);
         break;
+      } else {
+        console.log(`[GogoAnime] Domain unreachable: ${url}`);
       }
     }
     return makeGogoAnimeObj(gogoanime_base as string);
   } catch (error) {
-    console.error("Error occurred in both sites:", error);
-    throw error; // Rethrow the error to handle it outside
+    console.error("[GogoAnime] All domains failed:", error);
+    return makeGogoAnimeObj(cached_gogoanime_base || (gogoanime_base as string));
   }
 };
 

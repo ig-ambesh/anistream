@@ -43,19 +43,31 @@ const makeAniWatchObj = (aniwatch_base: string): AniWatchConfig => {
   }
 }
 
+let cached_aniwatch_base: string | null = null;
+let last_resolved_time = 0;
+const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
+
 // return fn
 const URL_fn = async (): Promise<AniWatchConfig> => {
+  const now = Date.now();
+  if (cached_aniwatch_base && (now - last_resolved_time < CACHE_DURATION)) {
+    return makeAniWatchObj(cached_aniwatch_base);
+  }
+
   try {
     for (const url of clones_array) {
       if (await isSiteReachable(url as string)) {
+        cached_aniwatch_base = url;
+        last_resolved_time = now;
         aniwatch_base = url;
+        console.log(`[AniWatch] Resolved and cached working domain: ${url}`);
         break;
       }
     }
     return makeAniWatchObj(aniwatch_base as string);
   } catch (error) {
     console.error("Error occurred in both sites:", error);
-    throw error; // Rethrow the error to handle it outside
+    return makeAniWatchObj(cached_aniwatch_base || (aniwatch_base as string));
   }
 };
 

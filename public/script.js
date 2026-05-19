@@ -1,6 +1,6 @@
 // ==========================================
 // 1. CONFIGURATION (API)
-const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '3000' ? 'http://localhost:3000' : window.location.origin;
+const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '3001' ? 'http://localhost:3001' : window.location.origin;
 async function getJson(endpoint, fallback) { 
     try { 
         // Cache busting for API calls
@@ -698,14 +698,14 @@ async function loadHomePage() {
 
     try {
         const [trending, recent, movies] = await Promise.all([
-            getJson('/gogoanime/popular?page=1', []),
-            getJson('/gogoanime/recent-releases?page=1', []),
-            getJson('/gogoanime/anime-movies?page=1', [])
+            getJson('/tmdb/anime/trending', []),
+            getJson('/tmdb/anime/recent', []),
+            getJson('/tmdb/anime/popular', [])
         ]);
 
-        const popMapped = (trending.animes || trending || []).map(i => normalizeGogoAnimeItem(i, { type: 'series' }));
-        const recMapped = (recent.animes || recent || []).map(i => normalizeGogoAnimeItem(i, { type: 'series', isRecent: true }));
-        const movMapped = (movies.animes || movies || []).map(i => normalizeGogoAnimeItem(i, { type: 'movie' }));
+        const popMapped = (trending || []).map(i => normalizeTMDBAnimeItem(i, { type: 'series' }));
+        const recMapped = (recent || []).map(i => normalizeTMDBAnimeItem(i, { type: 'series', isRecent: true }));
+        const movMapped = (movies || []).map(i => normalizeTMDBAnimeItem(i, { type: 'series' }));
 
         const added = new Set();
         [...popMapped, ...recMapped, ...movMapped].forEach(item => {
@@ -830,15 +830,40 @@ function normalizeGogoAnimeItem(item, options = {}) {
     };
 }
 
+function normalizeTMDBAnimeItem(item, options = {}) {
+    const id = item.id;
+    const image = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : '';
+    const title = item.name || item.title || 'Untitled Anime';
+    const type = options.type || (item.media_type === 'movie' ? 'movie' : 'series');
+    return {
+        id: `tmdb-${id}`,
+        title,
+        image,
+        banner: item.backdrop_path ? `https://image.tmdb.org/t/p/original${item.backdrop_path}` : image,
+        tmdbId: id,
+        language: 'Sub',
+        year: (item.first_air_date || item.release_date || '').split('-')[0] || '',
+        rating: item.vote_average ? String(item.vote_average.toFixed(1)) : '',
+        genres: [],
+        type,
+        timestamp: options.isRecent ? Date.now() : Date.now() - (Math.random() * 10000000),
+        description: item.overview || 'Enjoy this anime on AniStream.',
+        seasons: [{ episodes: [] }]
+    };
+}
+
 function normalizeGogoAnimeDetail(data, id) {
     const genres = splitGenres(data.genres || data.genre);
     const episodes = Array.isArray(data.episodes) ? data.episodes.map((ep, index) => {
         const episodeNo = ep.episodeNo || ep.number || index + 1;
+        const epId = ep.episodeId || ep.id || null;
         return {
             title: ep.title || `Episode ${episodeNo}`,
             episodeNo,
-            subEpisodeId: ep.episodeId || ep.id || null,
-            urlSub: ep.episodeId || ep.id || '',
+            subEpisodeId: epId,
+            dubEpisodeId: epId, // map both to the same episodeId
+            urlSub: epId || '',
+            url: epId || '', // map both to the same episodeId
             episodeUrl: ep.episodeUrl || ''
         };
     }) : [];
@@ -1115,6 +1140,57 @@ function createNetflixCard(data) {
     return card;
 }
 
+function createSearchListRow(data) {
+    const row = document.createElement('div');
+    row.classList.add('search-list-row');
+    
+    const randomMatch = Math.floor(Math.random() * 18 + 82);
+    const ratingValue = getRatingValue(data);
+    const year = getReleaseYearValue(data);
+    let seasonText = '';
+    if ((data.type || '').toLowerCase() === 'movie') {
+        seasonText = 'Movie';
+    } else {
+        const sCount = data.seasons ? data.seasons.length : 0;
+        seasonText = sCount > 1 ? `${sCount} Seasons` : '1 Season';
+    }
+    const eps = data.sub || 0;
+    const lang = data.language || 'Sub';
+    const typeLabel = (data.type || '').toLowerCase() === 'movie' ? 'Movie' : 'Series';
+
+    const metaPills = [
+        `<span class="search-list-pill match">${randomMatch}% Match</span>`,
+        `<span class="search-list-pill primary">${seasonText}</span>`
+    ];
+    if (eps > 0) metaPills.push(`<span class="search-list-pill">${eps} Ep</span>`);
+    if (year) metaPills.push(`<span class="search-list-pill">${year}</span>`);
+    metaPills.push(`<span class="search-list-pill">${lang}</span>`);
+    if (ratingValue > 0) metaPills.push(`<span class="search-list-pill rating">&#9733; ${ratingValue.toFixed(1)}</span>`);
+
+    let genresHtml = '';
+    if (data.genres && data.genres.length > 0) {
+        genresHtml = `
+            <div class="search-list-genres">
+                ${data.genres.slice(0, 3).map(g => `<span class="search-list-genre-tag">${g}</span>`).join('')}
+            </div>
+        `;
+    }
+
+    const descText = data.description || 'Enjoy this anime on AniStream.';
+
+    row.innerHTML = `
+        <img class="search-list-poster" src="${data.image || ''}" loading="lazy" alt="${data.title}">
+        <div class="search-list-info">
+            <div class="search-list-title">${data.title}</div>
+            <div class="search-list-meta">${metaPills.join('')}</div>
+            <div class="search-list-desc">${descText}</div>
+            ${genresHtml}
+        </div>
+    `;
+    row.onclick = () => window.location.href = `detail.html?anime=${data.id}`;
+    return row;
+}
+
 // ==========================================
 // 7. SEARCH
 // ==========================================
@@ -1126,7 +1202,7 @@ document.getElementById?.('search-input')?.addEventListener('input', (e) => {
     const query = e.target.value.toLowerCase().trim();
     grid.innerHTML = '';
     if (query.length < 2) return;
-    grid.innerHTML = '<p style="color:#555;padding:20px;grid-column:span 4;">Searching...</p>';
+    grid.innerHTML = '<p style="color:#777;padding:25px 0;text-align:center;width:100%;font-size:1.1rem;"><i class="fas fa-spinner fa-spin" style="margin-right:8px;color:var(--primary);"></i>Searching for your favorite titles...</p>';
 
     clearTimeout(searchDebounceTimer);
     const requestToken = ++searchRequestToken;
@@ -1151,10 +1227,10 @@ document.getElementById?.('search-input')?.addEventListener('input', (e) => {
 
         grid.innerHTML = '';
         if (!results.length) {
-            grid.innerHTML = '<p style="color:#555;padding:20px;grid-column:span 4;">No results found.</p>';
+            grid.innerHTML = '<p style="color:#555;padding:30px 0;text-align:center;width:100%;font-size:1.1rem;"><i class="fas fa-search" style="margin-right:8px;"></i>No matching titles found.</p>';
             return;
         }
-        results.forEach(item => grid.appendChild(createNetflixCard(item)));
+        results.forEach(item => grid.appendChild(createSearchListRow(item)));
     }, 250);
 });
 
@@ -2212,10 +2288,10 @@ if (_searchInput) {
             item.description?.toLowerCase().includes(query)
         );
         if (!results.length) {
-            grid.innerHTML = '<p style="color:#555;padding:20px;grid-column:span 4;">No results found.</p>';
+            grid.innerHTML = '<p style="color:#555;padding:30px 0;text-align:center;width:100%;font-size:1.1rem;"><i class="fas fa-search" style="margin-right:8px;"></i>No matching titles found.</p>';
             return;
         }
-        results.forEach(item => grid.appendChild(createNetflixCard(item)));
+        results.forEach(item => grid.appendChild(createSearchListRow(item)));
     });
 }
 

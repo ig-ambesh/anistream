@@ -29,7 +29,10 @@ export const extract_latest_episodes = (
           .find("div > a > div")
           ?.attr("class")
           ?.replace("type ic-", "") || "UNKNOWN";
-      const animeIMG = $(element).find("div > a > img")?.attr("src") ?? "SUB";
+      let animeIMG = $(element).find("div > a > img")?.attr("src") ?? "SUB";
+      if (animeIMG.startsWith("/")) {
+        animeIMG = url_base + animeIMG;
+      }
       const episodeUrl =
         url_base + "/" + $(element).find("p.name > a").attr("href");
 

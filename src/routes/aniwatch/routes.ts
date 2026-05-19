@@ -1,35 +1,16 @@
 import { Router, type IRouter } from "express";
-import {
-  getHomePageInfo,
-  getAboutPageInfo,
-  getSearchPageInfo,
-  getCategoryPage,
-  getEpisodesInfo,
-  getEpisodeServersInfo,
-  getAnimeEpisodeSourcesInfo,
-} from "../../controllers/aniwatch/controllers";
 
 const aniwatch_router: IRouter = Router();
 
-// /aniwatch/
-aniwatch_router.get("/", getHomePageInfo);
+// AniWatch/HiAnime shut down in March 2026.
+// All routes now return a 503 Service Unavailable response.
+const shutdownHandler = (_req: any, res: any) => {
+  res.status(503).json({
+    success: false,
+    error: "AniWatch/HiAnime has been permanently shut down as of March 2026. This data source is no longer available.",
+  });
+};
 
-// /aniwatch/search?keyword=$(query)&page=$(page)
-aniwatch_router.get("/search", getSearchPageInfo);
-
-// /aniwatch/anime/:id
-aniwatch_router.get("/anime/:id", getAboutPageInfo);
-
-// /aniwatch/episodes/:id
-aniwatch_router.get("/episodes/:id", getEpisodesInfo);
-
-// /aniwatch/servers?id=${id}
-aniwatch_router.get("/servers", getEpisodeServersInfo);
-
-// /aniwatch/episode-srcs?id=${episodeId}?server=${server}&category=${category (dub or sub)}
-aniwatch_router.get("/episode-srcs", getAnimeEpisodeSourcesInfo);
-
-//  aniwatch/:category?page=${page}
-aniwatch_router.get("/:category", getCategoryPage);
+aniwatch_router.use(shutdownHandler);
 
 export default aniwatch_router;

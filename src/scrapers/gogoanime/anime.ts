@@ -21,7 +21,10 @@ export const scrapeAnimeInfo = async (
     const $ = load(mainPage.data);
 
     const animeInfo = $("div.anime_info_body_bg");
-    const img = animeInfo.children("img").attr("src");
+    let img = animeInfo.children("img").attr("src");
+    if (img && img.startsWith("/")) {
+      img = URLs.BASE + img;
+    }
     const name = animeInfo.children("h1").text().trim();
     
     let type = "";

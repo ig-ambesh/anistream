@@ -40,3 +40,30 @@ export const getTrending = async (req: Request, res: Response) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+export const getAnimeTrendingHandler = async (req: Request, res: Response) => {
+    try {
+        const results = await require('../../lib/tmdb').getAnimeTrending();
+        res.json(results);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const getAnimeNewReleasesHandler = async (req: Request, res: Response) => {
+    try {
+        const results = await require('../../lib/tmdb').getAnimeNewReleases();
+        res.json(results);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const getAnimeHighRatedHandler = async (req: Request, res: Response) => {
+    try {
+        const results = await require('../../lib/tmdb').getAnimeHighRated();
+        res.json(results);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
