@@ -1827,6 +1827,20 @@
 
         loadDetailFromApi();
 
+        function cleanTitleForTMDB(title) {
+            if (!title) return '';
+            return title
+                .replace(/\(Dub\)/gi, '')
+                .replace(/\(Sub\)/gi, '')
+                .replace(/\(TV\)/gi, '')
+                .replace(/\(UNCENSORED\)/gi, '')
+                .replace(/- Dub/gi, '')
+                .replace(/- Sub/gi, '')
+                .replace(/:/g, ' ')
+                .replace(/  +/g, ' ')
+                .trim();
+        }
+
         async function loadDetailFromApi() {
             try {
                 const [detailData, popularData] = await Promise.all([
@@ -1840,6 +1854,108 @@
                 allContent = (popularData.animes || popularData || [])
                     .map(item => normalizeGogoAnimeItem(item, { type: 'series' }))
                     .filter(item => item.id && item.id !== animeId);
+
+                // ENRICH WITH RICH TMDB METADATA
+                try {
+                    const searchTitle = cleanTitleForTMDB(animeData.title);
+                    const tmdbSearch = await getJson(`/tmdb/search?q=${encodeURIComponent(searchTitle)}`, null);
+                    if (tmdbSearch && tmdbSearch.length > 0) {
+                        const match = tmdbSearch.find(item => 
+                            (item.name || item.title || '').toLowerCase() === searchTitle.toLowerCase() ||
+                            (item.original_name || item.original_title || '').toLowerCase() === searchTitle.toLowerCase()
+                        ) || tmdbSearch[0];
+
+                        if (match) {
+                            const mediaType = match.media_type || (match.first_air_date ? 'tv' : 'movie');
+                            const tmdbDetails = await getJson(`/tmdb/info/${match.id}?type=${mediaType}`, null);
+                            if (tmdbDetails) {
+                                if (tmdbDetails.backdrop_path) {
+                                    animeData.banner = `https://image.tmdb.org/t/p/original${tmdbDetails.backdrop_path}`;
+                                }
+                                const logoItem = tmdbDetails.images?.logos?.find(l => l.iso_639_1 === 'en') || tmdbDetails.images?.logos?.[0];
+                                if (logoItem) {
+                                    animeData.logo = `https://image.tmdb.org/t/p/original${logoItem.file_path}`;
+                                }
+                                if (tmdbDetails.tagline) {
+                                    animeData.tagline = tmdbDetails.tagline;
+                                }
+                                if (tmdbDetails.overview) {
+                                    animeData.description = tmdbDetails.overview;
+                                }
+                                if (tmdbDetails.vote_average) {
+                                    animeData.rating = tmdbDetails.vote_average.toFixed(1);
+                                    animeData.voteCount = tmdbDetails.vote_count;
+                                }
+                                if (tmdbDetails.popularity) {
+                                    animeData.popularity = tmdbDetails.popularity;
+                                }
+                                if (tmdbDetails.runtime || (tmdbDetails.episode_run_time && tmdbDetails.episode_run_time.length)) {
+                                    animeData.runtime = tmdbDetails.runtime || tmdbDetails.episode_run_time[0];
+                                }
+                                if (tmdbDetails.production_companies) {
+                                    animeData.studios = tmdbDetails.production_companies.map(c => c.name);
+                                }
+                                if (tmdbDetails.created_by) {
+                                    animeData.creators = tmdbDetails.created_by.map(c => c.name);
+                                }
+                                if (tmdbDetails.networks) {
+                                    animeData.networks = tmdbDetails.networks.map(n => n.name);
+                                }
+                                if (tmdbDetails.original_language) {
+                                    animeData.originalLanguage = tmdbDetails.original_language.toUpperCase();
+                                }
+                                if (tmdbDetails.origin_country) {
+                                    animeData.originCountry = tmdbDetails.origin_country;
+                                }
+                                if (tmdbDetails.external_ids?.imdb_id) {
+                                    animeData.imdbId = tmdbDetails.external_ids.imdb_id;
+                                }
+                                if (tmdbDetails.homepage) {
+                                    animeData.homepage = tmdbDetails.homepage;
+                                }
+                                if (tmdbDetails.credits?.cast) {
+                                    animeData.cast = tmdbDetails.credits.cast.slice(0, 10).map(c => ({
+                                        name: c.name,
+                                        character: c.character,
+                                        photo: c.profile_path ? `https://image.tmdb.org/t/p/w185${c.profile_path}` : null
+                                    }));
+                                }
+
+                                // Dynamic Parallel TMDB Season Fetcher to map actual episode thumbnails & synopsis details!
+                                if (tmdbDetails.seasons && tmdbDetails.seasons.length > 0) {
+                                    try {
+                                        const activeSeasons = tmdbDetails.seasons.filter(s => s.season_number > 0);
+                                        const targetSeasons = activeSeasons.slice(0, 8); // Support up to 8 seasons
+                                        const seasonPromises = targetSeasons.map(s => 
+                                            getJson(`/tmdb/tv/${match.id}/season/${s.season_number}`, null)
+                                        );
+                                        const seasonsData = await Promise.all(seasonPromises);
+                                        
+                                        const flatEpisodes = [];
+                                        seasonsData.forEach(sData => {
+                                            if (sData && sData.episodes) {
+                                                sData.episodes.forEach(ep => {
+                                                    flatEpisodes.push({
+                                                        episodeNo: ep.episode_number,
+                                                        seasonNo: sData.season_number,
+                                                        title: ep.name,
+                                                        overview: ep.overview,
+                                                        still: ep.still_path ? `https://image.tmdb.org/t/p/w300${ep.still_path}` : null
+                                                    });
+                                                });
+                                            }
+                                        });
+                                        animeData.tmdbEpisodes = flatEpisodes;
+                                    } catch (err) {
+                                        console.error('Failed to parse TMDB seasons:', err);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch(tmdbErr) {
+                    console.error('TMDB Enrichment error:', tmdbErr);
+                }
 
                 renderDetailPage();
                 renderRelated();
@@ -2258,6 +2374,14 @@
                 const realIdx = realEps.indexOf(ep) !== -1 ? realEps.indexOf(ep) : (useRange ? epRangeStart + i : i);
                 const absoluteEpNum = episodeOffset + realIdx + 1;
 
+                // Rich TMDB episode mapping (thumbnails, titles, synopses)
+                const tmdbEp = animeData.tmdbEpisodes ? animeData.tmdbEpisodes[absoluteEpNum - 1] : null;
+                if (tmdbEp) {
+                    if (tmdbEp.still) ep.thumbnail = tmdbEp.still;
+                    if (tmdbEp.title) ep.displayTitle = `${absoluteEpNum}. ${tmdbEp.title}`;
+                    if (tmdbEp.overview) ep.overview = tmdbEp.overview;
+                }
+
                 const available = Boolean((ep.url || ep.link || ep.urlSub || '').trim());
                 let langBadges = '';
                 if (ep.url || ep.link) langBadges += '<span style="color:#f59e0b;font-size:0.55rem;background:rgba(245,158,11,0.1);padding:1px 4px;border-radius:3px;margin-left:6px;font-weight:700;vertical-align:middle;">DUB</span>';
@@ -2278,6 +2402,7 @@
                 }
 
                 const duration = ep.duration ? `<div class="ep-li-duration"><i class="fas fa-clock" style="font-size:0.6rem"></i>${ep.duration}</div>` : '';
+                const displayEpTitle = ep.displayTitle || ep.title || `Episode ${absoluteEpNum}`;
 
                 item.innerHTML = `
                     <div class="ep-li-thumb-wrap">
@@ -2287,7 +2412,7 @@
                         ${available ? '' : '<div class="ep-li-unavailable">Unavailable</div>'}
                     </div>
                     <div class="ep-li-info">
-                        <div class="ep-li-title">${ep.title}${langBadges}</div>
+                        <div class="ep-li-title">${displayEpTitle}${langBadges}</div>
                         ${duration}
                     </div>
                     ${ep.overview ? `<div class="ep-overview-chip">${ep.overview}</div>` : ''}`;

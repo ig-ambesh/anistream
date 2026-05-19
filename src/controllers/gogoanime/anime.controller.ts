@@ -19,11 +19,44 @@ export const getAnimeInfo: RequestHandler = async (req, res) => {
       }
       
       if (tmdbDetails) {
-        const title = tmdbDetails.name || tmdbDetails.title;
+        const title = tmdbDetails.name || tmdbDetails.title || "";
         const { scrapeSearchPage } = require("../../scrapers/gogoanime/search");
-        const searchResults = await scrapeSearchPage(title, 1);
-        if (searchResults && searchResults.animes && searchResults.animes.length > 0) {
-          id = searchResults.animes[0].id;
+        
+        let foundId = "";
+        
+        // 1. Try full title search
+        try {
+          const searchResults = await scrapeSearchPage(title, 1);
+          if (searchResults && searchResults.animes && searchResults.animes.length > 0) {
+            foundId = searchResults.animes[0].id;
+          }
+        } catch (e) {
+          // ignore search errors and try fallback
+        }
+        
+        // 2. Try subtitle splitting (e.g. "Attack on Titan: The Last Attack" -> "Attack on Titan")
+        if (!foundId && (title.includes(":") || title.includes("-") || title.includes("–") || title.includes("("))) {
+          const parts = title.split(/[:\-–(]/);
+          const cleanTitle = parts[0].trim();
+          if (cleanTitle.length > 2) {
+            try {
+              const searchResults = await scrapeSearchPage(cleanTitle, 1);
+              if (searchResults && searchResults.animes && searchResults.animes.length > 0) {
+                // Find matching movie title
+                const movieMatch = searchResults.animes.find((a: any) => 
+                  a.name.toLowerCase().includes("movie") || 
+                  a.id.toLowerCase().includes("movie")
+                );
+                foundId = movieMatch ? movieMatch.id : searchResults.animes[0].id;
+              }
+            } catch (e) {
+              // ignore search errors
+            }
+          }
+        }
+        
+        if (foundId) {
+          id = foundId;
         } else {
           id = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
         }

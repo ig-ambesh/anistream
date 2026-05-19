@@ -67,3 +67,13 @@ export const getAnimeHighRatedHandler = async (req: Request, res: Response) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+export const getSeasonDetails = async (req: Request, res: Response) => {
+    const { id, season_number } = req.params;
+    try {
+        const results = await require('../../lib/tmdb').getTMDBSeason(id, season_number);
+        res.json(results);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};

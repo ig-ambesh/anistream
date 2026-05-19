@@ -58,6 +58,22 @@ export const scrapeEpisodeSources = async (
           }
 
           pageServers.push({ name, url, type });
+
+          // Generate DUB/SUB counterparts for unified player links containing category=sub/dub or type=sub/dub
+          if (url.includes("category=") || url.includes("type=")) {
+            const isSub = url.includes("category=sub") || url.includes("type=sub");
+            const isDub = url.includes("category=dub") || url.includes("type=dub");
+            
+            if (isSub) {
+              const dubUrl = url.replace("category=sub", "category=dub").replace("type=sub", "type=dub");
+              const cleanName = name.replace(" (SUB)", "").replace(" (DUB)", "");
+              pageServers.push({ name: cleanName + " (DUB)", url: dubUrl, type: "DUB" });
+            } else if (isDub) {
+              const subUrl = url.replace("category=dub", "category=sub").replace("type=dub", "type=sub");
+              const cleanName = name.replace(" (SUB)", "").replace(" (DUB)", "");
+              pageServers.push({ name: cleanName + " (SUB)", url: subUrl, type: "SUB" });
+            }
+          }
         });
 
         if (pageServers.length > 0) {
@@ -105,6 +121,22 @@ export const scrapeEpisodeSources = async (
             }
 
             pageServers.push({ name, url, type });
+
+            // Generate DUB/SUB counterparts for unified player links containing category=sub/dub or type=sub/dub
+            if (url.includes("category=") || url.includes("type=")) {
+              const isSub = url.includes("category=sub") || url.includes("type=sub");
+              const isDub = url.includes("category=dub") || url.includes("type=dub");
+              
+              if (isSub) {
+                const dubUrl = url.replace("category=sub", "category=dub").replace("type=sub", "type=dub");
+                const cleanName = name.replace(" (SUB)", "").replace(" (DUB)", "");
+                pageServers.push({ name: cleanName + " (DUB)", url: dubUrl, type: "DUB" });
+              } else if (isDub) {
+                const subUrl = url.replace("category=dub", "category=sub").replace("type=dub", "type=sub");
+                const cleanName = name.replace(" (SUB)", "").replace(" (DUB)", "");
+                pageServers.push({ name: cleanName + " (SUB)", url: subUrl, type: "SUB" });
+              }
+            }
           });
 
           if (pageServers.length > 0) {

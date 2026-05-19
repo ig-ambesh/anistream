@@ -507,7 +507,16 @@
         window.playEpisode = function(s, e) {
             if (_origPlay) _origPlay(s, e);
             curSeason = s; curEp = e;
-            document.getElementById('nw-ep-display').textContent = `Episode ${e + 1}`;
+            
+            const isMovie = (currentAnimeData?.type || '').toLowerCase() === 'movie';
+            const epText = isMovie ? 'Full Movie' : `Episode ${e + 1}`;
+            
+            const epDisplay = document.getElementById('nw-ep-display');
+            if (epDisplay) epDisplay.textContent = epText;
+            
+            const bcEp = document.getElementById('bc-ep');
+            if (bcEp) bcEp.textContent = epText;
+
             document.querySelectorAll('.ep-item').forEach(el => el.classList.remove('active'));
             const activeItem = document.getElementById(`ep-item-${s}-${e}`);
             if (activeItem) { activeItem.classList.add('active'); activeItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
@@ -516,12 +525,69 @@
         const _origSetup = window.setupPlayer;
         window.setupPlayer = function(content, id, s, e) {
             if (_origSetup) _origSetup(content, id, s, e);
-            document.getElementById('info-poster').src = content.image || content.banner || '';
-            document.getElementById('info-title').textContent = content.title;
-            document.getElementById('info-desc').textContent = content.description || '';
+            
+            const posterImg = document.getElementById('info-poster');
+            if (posterImg) posterImg.src = content.image || content.banner || '';
+            
+            const infoTitle = document.getElementById('info-title');
+            if (infoTitle) infoTitle.textContent = content.title;
+            
+            const infoDesc = document.getElementById('info-desc');
+            if (infoDesc) infoDesc.textContent = content.description || '';
+            
+            // Dynamic Breadcrumbs
+            const bcAnime = document.getElementById('bc-anime-link');
+            if (bcAnime) {
+                bcAnime.textContent = content.title;
+                bcAnime.href = `detail.html?anime=${encodeURIComponent(id)}`;
+            }
+            
+            const bcEp = document.getElementById('bc-ep');
+            if (bcEp) {
+                if ((content.type || '').toLowerCase() === 'movie') {
+                    bcEp.textContent = 'Full Movie';
+                } else {
+                    bcEp.textContent = `Episode ${e + 1}`;
+                }
+            }
+
             buildEpisodeList(content, s || 0);
-            loadRelated(id, content.genres || []);
+            window.loadRelated(id, content.genres || []);
         };
+
+        window.loadRelated = async function(id, genres) {
+            const container = document.getElementById('related-grid');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            try {
+                // Query trending anime from backend to provide premium curated suggestions
+                const popular = await getJson('/tmdb/anime/trending', []);
+                const items = (popular || []).slice(0, 5);
+                
+                items.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'related-card';
+                    card.onclick = () => {
+                        window.location.href = `watch.html?anime=${encodeURIComponent(item.id.replace('tmdb-', ''))}`;
+                    };
+                    
+                    const poster = item.poster_path ? `https://image.tmdb.org/t/p/w200${item.poster_path}` : '';
+                    card.innerHTML = `
+                        <img class="rc-thumb" src="${poster}" alt="">
+                        <div class="rc-info">
+                            <div class="rc-title">${item.name || item.title || 'Untitled'}</div>
+                            <div style="font-size:0.7rem; color:var(--wp-text3); margin-top:4px;">
+                                <i class="fas fa-star" style="color:var(--wp-accent); margin-right:3px;"></i>${item.vote_average ? item.vote_average.toFixed(1) : 'N/A'}
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (err) {
+                console.error('Failed to load related anime:', err);
+            }
+        }
 
         function buildEpisodeList(d, sIdx) {
             const container = document.getElementById('ep-list-scroll');

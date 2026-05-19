@@ -68,6 +68,16 @@ export const getTMDBDetails = async (id: string, type: 'tv' | 'movie' = 'tv') =>
     }
 };
 
+export const getTMDBSeason = async (id: string, seasonNumber: string) => {
+    try {
+        const response = await tmdb.get(`/tv/${id}/season/${seasonNumber}`);
+        return response.data;
+    } catch (error) {
+        console.error(`Error getting TMDB season ${seasonNumber} for tv ${id}:`, error);
+        return null;
+    }
+};
+
 export const getTMDBTrending = async (type: 'tv' | 'movie' = 'tv') => {
     try {
         const response = await tmdb.get(`/trending/${type}/week`);

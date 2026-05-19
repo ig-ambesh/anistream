@@ -49,21 +49,45 @@ function getTimestampMs(value) {
 }
 
 function getLatestHeroItems(items, limit = 6) {
-    const sortedByLatest = [...items].sort((a, b) => getTimestampMs(b.timestamp) - getTimestampMs(a.timestamp));
-    const latestTmdbImports = sortedByLatest
-        .filter(item => item.tmdbId && (item.type === 'series' || item.type === 'movie'))
-        .slice(0, limit)
-        .map((item, index) => ({
+    // Filter to keep ONLY trending (ratings >= 7.0) and new (released this year or last year) titles
+    const filtered = items.filter(item => {
+        const rating = parseFloat(item.rating) || 0;
+        const year = parseInt(item.year) || 0;
+        const currentYear = new Date().getFullYear();
+        
+        const isTrending = rating >= 7.0;
+        const isNew = year >= currentYear - 1;
+        
+        return item.tmdbId && (isTrending || isNew);
+    });
+
+    const targetItems = filtered.length > 0 ? filtered : items;
+
+    // Sort to prioritize absolute newest releases first, then rank by highest rating
+    const sorted = [...targetItems].sort((a, b) => {
+        const yearA = parseInt(a.year) || 0;
+        const yearB = parseInt(b.year) || 0;
+        if (yearA !== yearB) return yearB - yearA;
+        
+        const ratingA = parseFloat(a.rating) || 0;
+        const ratingB = parseFloat(b.rating) || 0;
+        return ratingB - ratingA;
+    });
+
+    return sorted.slice(0, limit).map((item, index) => {
+        const rating = parseFloat(item.rating) || 0;
+        const isTrending = rating >= 8.0;
+        let label = 'Spotlight';
+        if (item.type === 'movie') {
+            label = isTrending ? 'Trending Movie' : 'New Movie';
+        } else {
+            label = isTrending ? 'Trending Series' : 'New Series';
+        }
+        return {
             ...item,
-            bannerLabel: index === 0 ? 'Latest Import' : (item.type === 'movie' ? 'New Movie' : 'New Series')
-        }));
-
-    if (latestTmdbImports.length > 0) return latestTmdbImports;
-
-    return sortedByLatest.slice(0, limit).map((item, index) => ({
-        ...item,
-        bannerLabel: index === 0 ? 'Just Added' : (item.type === 'movie' ? 'Latest Movie' : 'Latest Series')
-    }));
+            bannerLabel: label
+        };
+    });
 }
 
 function formatHeroTitle(title, maxLength = 32) {
@@ -697,15 +721,17 @@ async function loadHomePage() {
     const movieRow = document.getElementById('movie-row'); if(movieRow) movieRow.innerHTML = '';
 
     try {
-        const [trending, recent, movies] = await Promise.all([
+        const [trending, recent, moviesData] = await Promise.all([
             getJson('/tmdb/anime/trending', []),
             getJson('/tmdb/anime/recent', []),
-            getJson('/tmdb/anime/popular', [])
+            getJson('/gogoanime/anime-movies', [])
         ]);
 
         const popMapped = (trending || []).map(i => normalizeTMDBAnimeItem(i, { type: 'series' }));
         const recMapped = (recent || []).map(i => normalizeTMDBAnimeItem(i, { type: 'series', isRecent: true }));
-        const movMapped = (movies || []).map(i => normalizeTMDBAnimeItem(i, { type: 'series' }));
+        
+        const rawMovies = Array.isArray(moviesData) ? moviesData : (moviesData.animes || []);
+        const movMapped = rawMovies.map(i => normalizeGogoAnimeItem(i, { type: 'movie' }));
 
         const added = new Set();
         [...popMapped, ...recMapped, ...movMapped].forEach(item => {
@@ -1335,17 +1361,34 @@ function setupPlayer(content, id, startSeason=0, startEp=0) {
     const vp = document.getElementById('video-player');
     const epTitle = document.getElementById('ep-title');
 
-    // Use CSS for layout instead of hardcoded JS styles
     const container = document.querySelector('.watch-container');
     const leftSidebar = document.querySelector('.ep-sidebar');
     const rightSidebar = document.querySelector('.info-sidebar');
-    
+
+    // Keep consistent layout column styling for both Movies and Series
+    if (container) container.style.gridTemplateColumns = '';
+    if (leftSidebar) leftSidebar.style.display = '';
+
     if ((content.type || '').toLowerCase() === 'movie') {
         const disclaimer = document.getElementById('player-disclaimer');
         const mUrl = (content.videoUrl || '').trim();
         
-        if (container) container.style.gridTemplateColumns = '0 1fr 320px';
-        if (leftSidebar) leftSidebar.style.display = 'none';
+        // Render a premium "Full Movie" item inside the left sidebar list
+        const epList = document.getElementById('ep-list-scroll');
+        if (epList) {
+            epList.innerHTML = '';
+            const div = document.createElement('div');
+            div.id = 'ep-item-0-0';
+            div.className = 'ep-item active';
+            div.innerHTML = `
+                <span class="ep-item-num"><i class="fas fa-film" style="color:var(--wp-purple);"></i></span>
+                <span class="ep-item-title">Full Movie</span>
+            `;
+            div.onclick = () => {
+                if (window.playEpisode !== playEpisode) window.playEpisode(0, 0); else playEpisode(0, 0);
+            };
+            epList.appendChild(div);
+        }
 
         if (!mUrl) {
             const firstEp = content.seasons?.[0]?.episodes?.[0];
