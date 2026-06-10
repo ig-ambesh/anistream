@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Top 100 Leaderboards - AniStream</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            padding-top: 70px;
+            min-height: 100vh;
+            background-color: #0c0c0e;
+            color: white;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .leaderboard-hero {
+            padding: 80px 5% 40px;
+            text-align: center;
+            position: relative;
+        }
+
+        .leaderboard-hero::before {
+            content: '';
+            position: absolute;
+            top: -20%; left: 50%;
+            transform: translateX(-50%);
+            width: 80%; height: 300px;
+            background: radial-gradient(circle, rgba(229, 25, 58, 0.12) 0%, transparent 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .lb-title {
+            font-size: 3.5rem;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #ffffff 40%, #a1a1aa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        @media (max-width: 768px) {
+            .lb-title {
+                font-size: 2.5rem;
+            }
+        }
+
+        .lb-desc {
+            color: #a1a1aa;
+            max-width: 600px;
+            margin: 0 auto;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .hero-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(229, 25, 58, 0.08);
+            color: #ff8090;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            margin-bottom: 20px;
+            border: 1px solid rgba(229, 25, 58, 0.2);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 0 20px rgba(229, 25, 58, 0.1);
+        }
+
+        /* ── FILTER TABS ───────────────────────────────────── */
+        .tabs-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            padding: 0 5%;
+        }
+
+        .day-tabs {
+            display: flex;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 6px;
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            overflow-x: auto;
+            max-width: 100%;
+            scrollbar-width: none;
+        }
+
+        .day-tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .day-tab {
+            background: transparent;
+            border: none;
+            color: #a1a1aa;
+            padding: 10px 22px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            white-space: nowrap;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .day-tab:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .day-tab.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 8px 20px rgba(229, 25, 58, 0.4);
+        }
+
+        /* ── CARD GRID ─────────────────────────────────────── */
+        .lb-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 30px;
+            padding: 20px 5% 60px;
+            margin-bottom: 50px;
+        }
+
+        .content-card {
+            position: relative;
+            aspect-ratio: 2/3;
+            border-radius: 18px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        .content-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(12, 12, 14, 0.95) 95%);
+            z-index: 2;
+            transition: opacity 0.3s;
+        }
+
+        .content-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            border-color: rgba(229, 25, 58, 0.4);
+            box-shadow: 0 15px 35px rgba(229, 25, 58, 0.2), 0 0 30px rgba(229, 25, 58, 0.1);
+        }
+
+        .card-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s ease;
+        }
+
+        .content-card:hover .card-img {
+            transform: scale(1.08);
+        }
+
+        .card-overlay {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 20px;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.3;
+        }
+
+        .card-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-2);
+        }
+
+        .card-meta span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .card-meta i {
+            font-size: 0.72rem;
+        }
+
+        /* ── RANK BADGES ───────────────────────────────────── */
+        .rank-badge {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 0.95rem;
+            z-index: 10;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            background: rgba(12, 12, 14, 0.6);
+            color: #e4e4e7;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+        }
+
+        .rank-1 {
+            background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
+            color: #000;
+            border-color: #ffd700;
+            box-shadow: 0 8px 20px rgba(255, 215, 0, 0.4);
+        }
+        .rank-2 {
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+            color: #000;
+            border-color: #cbd5e1;
+            box-shadow: 0 8px 20px rgba(203, 213, 225, 0.4);
+        }
+        .rank-3 {
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            color: white;
+            border-color: #d97706;
+            box-shadow: 0 8px 20px rgba(217, 119, 6, 0.4);
+        }
+
+        .content-card:hover .rank-badge {
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav id="navbar">
+        <div style="display:flex;align-items:center;gap:35px;">
+            <a href="index.html" class="logo">AniStream</a>
+            <div class="nav-links">
+                <button onclick="window.location.href='index.html'">Home</button>
+                <button class="active">Leaderboards</button>
+                <button onclick="window.location.href='seasons.html'">Archives</button>
+                <button onclick="window.location.href='schedule.html'">Schedule</button>
+                <button onclick="window.location.href='mylist.html'">My List</button>
+            </div>
+        </div>
+        <div class="nav-right">
+            <button class="search-trigger" onclick="window.location.href='index.html'" title="Search on Home"><i class="fas fa-search"></i></button>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <header class="leaderboard-hero">
+        <div class="hero-tag">
+            <i class="fas fa-trophy"></i> Hall of Fame
+        </div>
+        <h1 class="lb-title">Top 100 Anime</h1>
+        <p class="lb-desc">Discover the highest-rated and most popular anime of all time, ranked by the global community.</p>
+    </header>
+
+    <!-- FILTER TABS -->
+    <div class="tabs-container">
+        <div class="day-tabs">
+            <button class="day-tab active" onclick="loadLeaderboard('top')">Top All Time</button>
+            <button class="day-tab" onclick="loadLeaderboard('bypopularity')">Most Popular</button>
+            <button class="day-tab" onclick="loadLeaderboard('airing')">Top Airing</button>
+            <button class="day-tab" onclick="loadLeaderboard('upcoming')">Top Upcoming</button>
+        </div>
+    </div>
+
+    <!-- MAIN GRID -->
+    <div class="lb-grid" id="lb-grid">
+        <div class="loading-wrapper" style="grid-column: 1 / -1; min-height: 40vh;">
+            <div class="loader"></div>
+            <h3>Loading Rankings...</h3>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Set up navbar scroll effect
+        window.addEventListener('scroll', () => {
+            document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 50);
+        });
+
+        // Tab switching logic
+        document.querySelectorAll('.day-tab').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.day-tab').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        async function loadLeaderboard(filter) {
+            const grid = document.getElementById('lb-grid');
+            grid.innerHTML = `
+                <div class="loading-wrapper" style="grid-column: 1 / -1; min-height: 40vh;">
+                    <div class="loader"></div>
+                    <h3>Loading Rankings...</h3>
+                </div>
+            `;
+
+            try {
+                const endpoint = filter === 'top' ? '/jikan/top' : `/jikan/top?filter=${filter}`;
+                const data = await getJson(endpoint, []);
+                
+                if (!data || data.length === 0) {
+                    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#777;padding:50px;">No rankings found.</div>';
+                    return;
+                }
+
+                grid.innerHTML = '';
+                data.forEach((item, index) => {
+                    const rank = index + 1;
+                    const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : '';
+                    
+                    const card = document.createElement('div');
+                    card.className = 'content-card';
+                    card.style.position = 'relative';
+                    // We try to search Gogoanime when clicked, or open detail with MAL info
+                    card.onclick = () => window.location.href = `detail.html?anime=${encodeURIComponent(item.title)}`;
+                    
+                    card.innerHTML = `
+                        <div class="rank-badge ${rankClass}">#${rank}</div>
+                        <img src="${item.images?.jpg?.large_image_url || item.images?.jpg?.image_url}" class="card-img" alt="${item.title}" loading="lazy">
+                        <div class="card-overlay">
+                            <div class="card-title">${item.title}</div>
+                            <div class="card-meta">
+                                <span><i class="fas fa-star" style="color:#f5c518"></i> ${item.score || 'N/A'}</span>
+                                <span><i class="fas fa-users"></i> ${(item.members / 1000).toFixed(1)}k</span>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+
+            } catch(e) {
+                grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#ff5050;padding:50px;">Failed to load leaderboard.</div>';
+            }
+        }
+
+        // Initialize
+        loadLeaderboard('top');
+    </script>
+</body>
+</html>

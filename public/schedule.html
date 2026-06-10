@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Release Schedule - AniStream</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        :root {
+            --sched-bg: #0b0b14;
+            --sched-surface: rgba(255, 255, 255, 0.03);
+            --sched-border: rgba(255, 255, 255, 0.08);
+            --sched-accent: #e5193a;
+            --sched-glow: rgba(229, 25, 58, 0.3);
+            --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        body {
+            background-color: var(--sched-bg);
+            padding-top: 60px;
+            font-family: 'Outfit', sans-serif;
+            color: #f0f0f5;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Ambient Glow Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -20%; left: -10%;
+            width: 50vw; height: 50vw;
+            background: radial-gradient(circle, var(--sched-glow) 0%, transparent 70%);
+            opacity: 0.15;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Hero Header */
+        .schedule-hero {
+            padding: 80px 5% 40px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(229, 25, 58, 0.1);
+            border: 1px solid rgba(229, 25, 58, 0.2);
+            color: var(--sched-accent);
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            box-shadow: 0 0 20px rgba(229, 25, 58, 0.1);
+        }
+
+        .schedule-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 4.5rem;
+            letter-spacing: 3px;
+            margin-bottom: 15px;
+            background: linear-gradient(180deg, #ffffff 0%, #a1a1aa 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-transform: uppercase;
+        }
+
+        .schedule-desc {
+            color: #a1a1aa;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Day Tabs - Glassmorphism */
+        .tabs-container {
+            position: sticky;
+            top: 60px;
+            z-index: 100;
+            padding: 20px 5%;
+            background: rgba(11, 11, 20, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--sched-border);
+            display: flex;
+            justify-content: center;
+        }
+
+        .day-tabs {
+            display: flex;
+            gap: 12px;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            padding-bottom: 5px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none; /* Firefox */
+        }
+        .day-tabs::-webkit-scrollbar { display: none; /* Chrome */ }
+
+        .day-tab {
+            padding: 12px 28px;
+            background: var(--sched-surface);
+            border: 1px solid var(--sched-border);
+            border-radius: 100px;
+            color: #a1a1aa;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s var(--ease-out);
+            white-space: nowrap;
+        }
+
+        .day-tab:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+            transform: translateY(-2px);
+        }
+
+        .day-tab.active {
+            background: var(--sched-accent);
+            border-color: var(--sched-accent);
+            color: #ffffff;
+            box-shadow: 0 8px 25px var(--sched-glow);
+            transform: translateY(-2px);
+        }
+
+        /* Premium Schedule Grid */
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 25px;
+            padding: 50px 5% 100px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        .s-card {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            aspect-ratio: 2/3;
+            cursor: pointer;
+            text-decoration: none;
+            transition: transform 0.4s var(--ease-out), box-shadow 0.4s var(--ease-out);
+            background: #1a1a24;
+            display: block;
+        }
+
+        .s-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 20px var(--sched-glow);
+        }
+
+        .s-thumb {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s var(--ease-out);
+        }
+
+        .s-card:hover .s-thumb {
+            transform: scale(1.08);
+        }
+
+        /* Gradient Overlay for Text Visibility */
+        .s-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                to top,
+                rgba(11, 11, 20, 0.95) 0%,
+                rgba(11, 11, 20, 0.6) 40%,
+                transparent 100%
+            );
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 20px;
+            transition: background 0.3s var(--ease-out);
+        }
+
+        .s-card:hover .s-overlay {
+            background: linear-gradient(
+                to top,
+                rgba(229, 25, 58, 0.9) 0%,
+                rgba(11, 11, 20, 0.7) 50%,
+                transparent 100%
+            );
+        }
+
+        /* Top Badges */
+        .s-top-badges {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .s-time-badge {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #ffffff;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .s-time-badge i {
+            color: var(--sched-accent);
+        }
+
+        .s-score-badge {
+            background: rgba(245, 158, 11, 0.9);
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        /* Content Details */
+        .s-title {
+            color: #ffffff;
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            line-height: 1.2;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .s-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.8rem;
+            color: #d4d4d8;
+            font-weight: 500;
+        }
+
+        .s-studio {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .s-studio i {
+            font-size: 0.7rem;
+            opacity: 0.7;
+        }
+
+        /* Loading Animation */
+        .loading-wrapper {
+            grid-column: 1 / -1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 100px 0;
+            color: var(--sched-accent);
+        }
+        
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(229, 25, 58, 0.2);
+            border-top-color: var(--sched-accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Empty State */
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 80px 20px;
+            background: var(--sched-surface);
+            border: 1px dashed var(--sched-border);
+            border-radius: 20px;
+        }
+        .empty-state i {
+            font-size: 3rem;
+            color: #52525b;
+            margin-bottom: 15px;
+        }
+        .empty-state h3 {
+            font-size: 1.5rem;
+            color: #ffffff;
+            margin-bottom: 10px;
+        }
+        .empty-state p {
+            color: #a1a1aa;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav id="navbar">
+        <div style="display:flex;align-items:center;gap:35px;">
+            <a href="index.html" class="logo">AniStream</a>
+            <div class="nav-links">
+                <button onclick="window.location.href='index.html'">Home</button>
+                <button onclick="window.location.href='leaderboards.html'">Leaderboards</button>
+                <button onclick="window.location.href='seasons.html'">Archives</button>
+                <button class="active">Schedule</button>
+                <button onclick="window.location.href='mylist.html'">My List</button>
+            </div>
+        </div>
+        <div class="nav-right">
+            <button class="search-trigger" onclick="playRandomAnime()" title="Surprise Me (Random Highly Rated Anime)" style="margin-right: 5px; border-radius: 50%;"><i class="fas fa-dice"></i></button>
+            <div class="nav-search-container" id="nav-search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="search-input" class="nav-search-input" placeholder="Search anime...">
+                <div id="search-results-grid" class="nav-search-dropdown"></div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <header class="schedule-hero">
+        <div class="hero-badge"><i class="fas fa-broadcast-tower"></i> Simulcast Network</div>
+        <h1 class="schedule-title">Weekly Release Schedule</h1>
+        <p class="schedule-desc">Track all currently airing anime. Never miss an episode with our up-to-date Japanese broadcast timings converted for you.</p>
+    </header>
+
+    <!-- DAY FILTER TABS -->
+    <div class="tabs-container">
+        <div class="day-tabs" id="day-tabs">
+            <button class="day-tab" onclick="loadSchedule('monday')">Monday</button>
+            <button class="day-tab" onclick="loadSchedule('tuesday')">Tuesday</button>
+            <button class="day-tab" onclick="loadSchedule('wednesday')">Wednesday</button>
+            <button class="day-tab" onclick="loadSchedule('thursday')">Thursday</button>
+            <button class="day-tab" onclick="loadSchedule('friday')">Friday</button>
+            <button class="day-tab" onclick="loadSchedule('saturday')">Saturday</button>
+            <button class="day-tab" onclick="loadSchedule('sunday')">Sunday</button>
+        </div>
+    </div>
+
+    <!-- MAIN GRID -->
+    <div class="schedule-grid" id="schedule-grid">
+        <div class="loading-wrapper">
+            <div class="loader"></div>
+            <h3>Syncing Schedule...</h3>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        const today = days[new Date().getDay()];
+
+        // Navbar Scroll Effect
+        window.addEventListener('scroll', () => {
+            document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 50);
+        });
+
+        async function loadSchedule(day) {
+            // Update Active Tab
+            document.querySelectorAll('.day-tab').forEach(t => {
+                if(t.innerText.toLowerCase() === day) {
+                    t.classList.add('active');
+                    // Center the active tab in mobile view
+                    t.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                } else {
+                    t.classList.remove('active');
+                }
+            });
+
+            const grid = document.getElementById('schedule-grid');
+            grid.innerHTML = `
+                <div class="loading-wrapper">
+                    <div class="loader"></div>
+                    <h3 style="color:#a1a1aa; font-weight:500;">Syncing ${day.charAt(0).toUpperCase() + day.slice(1)} Schedule...</h3>
+                </div>
+            `;
+
+            try {
+                const res = await fetch(`/jikan/schedules?filter=${day}`);
+                if(!res.ok) throw new Error('Network error');
+                const data = await res.json();
+                
+                if(data && data.length > 0) {
+                    // Sort by rating (score) in descending order
+                    data.sort((a, b) => (b.score || 0) - (a.score || 0));
+
+                    grid.innerHTML = '';
+
+                    data.forEach((anime, index) => {
+                        const time = anime.broadcast?.time || 'TBA';
+                        const score = anime.score ? `<i class="fas fa-star"></i> ${anime.score}` : '<i class="fas fa-star-half-alt"></i> NR';
+                        const studio = anime.studios?.length > 0 ? anime.studios[0].name : 'Unknown Studio';
+                        
+                        const displayTitle = anime.title_english || anime.title;
+                        const link = `index.html?searchQuery=${encodeURIComponent(displayTitle)}`;
+
+                        // Staggered animation delay for cards
+                        const delay = index * 0.05;
+
+                        grid.innerHTML += `
+                            <a href="${link}" class="s-card" style="animation: fadeUp 0.6s cubic-bezier(0.2,0.8,0.2,1) ${delay}s both;">
+                                <img src="${anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url}" class="s-thumb" alt="${displayTitle}" loading="lazy">
+                                
+                                <div class="s-top-badges">
+                                    <div class="s-time-badge"><i class="fas fa-clock"></i> ${time}</div>
+                                    <div class="s-score-badge">${score}</div>
+                                </div>
+
+                                <div class="s-overlay">
+                                    <h3 class="s-title">${displayTitle}</h3>
+                                    <div class="s-meta">
+                                        <span class="s-studio"><i class="fas fa-video"></i> ${studio}</span>
+                                    </div>
+                                </div>
+                            </a>
+                        `;
+                    });
+                } else {
+                    grid.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-calendar-times"></i>
+                            <h3>No broadcasts found</h3>
+                            <p>There are currently no anime scheduled to air on ${day}.</p>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                console.error(err);
+                grid.innerHTML = `
+                    <div class="empty-state" style="border-color: rgba(229,25,58,0.3);">
+                        <i class="fas fa-exclamation-triangle" style="color: var(--sched-accent);"></i>
+                        <h3>Connection Error</h3>
+                        <p>Failed to sync the schedule. Please try again later.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Add CSS animation for cards
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeUp {
+                from { opacity: 0; transform: translateY(30px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize with today's schedule
+        loadSchedule(today);
+    </script>
+</body>
+</html>

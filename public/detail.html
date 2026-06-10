@@ -1608,6 +1608,275 @@
             border: 5px solid transparent;
             border-top-color: rgba(255, 255, 255, 0.1);
         }
+
+        /* ── CHARACTER MODAL STYLES ───────────────────────── */
+        .char-modal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(4, 4, 8, 0.85);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .char-modal.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .char-modal-card {
+            background: linear-gradient(145deg, rgba(20, 20, 30, 0.95), rgba(10, 10, 15, 0.98));
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            width: 90%;
+            max-width: 680px;
+            max-height: 85vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(229, 25, 58, 0.05);
+            transform: scale(0.9) translateY(20px);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+        }
+
+        .char-modal.open .char-modal-card {
+            transform: scale(1) translateY(0);
+        }
+
+        .char-modal-card::-webkit-scrollbar {
+            width: 6px;
+        }
+        .char-modal-card::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+        }
+
+        .char-modal-close {
+            position: absolute;
+            top: 20px; right: 20px;
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-2);
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.25s;
+            z-index: 10;
+        }
+
+        .char-modal-close:hover {
+            background: rgba(229, 25, 58, 0.15);
+            border-color: rgba(229, 25, 58, 0.4);
+            color: #ff8090;
+            transform: rotate(90deg);
+        }
+
+        .char-header {
+            display: flex;
+            gap: 24px;
+            padding: 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            background: linear-gradient(180deg, rgba(229, 25, 58, 0.05) 0%, transparent 100%);
+        }
+
+        @media (max-width: 576px) {
+            .char-header {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                gap: 16px;
+                padding: 24px;
+            }
+        }
+
+        .char-img-wrap {
+            width: 130px;
+            height: 180px;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            flex-shrink: 0;
+        }
+
+        .char-img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+        }
+
+        .char-meta {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .char-title-name {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            line-height: 1.2;
+        }
+
+        .char-kanji {
+            font-size: 1rem;
+            color: var(--text-3);
+            font-weight: 500;
+        }
+
+        .char-badge-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+
+        .char-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text-2);
+        }
+
+        .char-badge-fav {
+            background: rgba(229, 25, 58, 0.1);
+            border-color: rgba(229, 25, 58, 0.2);
+            color: #ff8090;
+        }
+
+        .char-body {
+            padding: 24px 30px 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        @media (max-width: 576px) {
+            .char-body {
+                padding: 20px;
+            }
+        }
+
+        .char-section-title {
+            font-size: 1rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text);
+            margin-bottom: 12px;
+            font-family: 'Outfit', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .char-section-title i {
+            color: #e5193a;
+            font-size: 0.9rem;
+        }
+
+        .char-bio {
+            font-size: 0.88rem;
+            line-height: 1.6;
+            color: var(--text-2);
+            white-space: pre-line;
+            max-height: 250px;
+            overflow-y: auto;
+            padding-right: 10px;
+            scrollbar-width: thin;
+        }
+
+        .char-bio::-webkit-scrollbar {
+            width: 4px;
+        }
+        .char-bio::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.08);
+            border-radius: 2px;
+        }
+
+        .char-voice-row, .char-anime-row {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            scrollbar-width: none;
+        }
+
+        .char-voice-row::-webkit-scrollbar, .char-anime-row::-webkit-scrollbar {
+            display: none;
+        }
+
+        .char-voice-card, .char-anime-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            text-align: center;
+            width: 90px;
+            flex-shrink: 0;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 8px 6px;
+            transition: all 0.2s;
+        }
+
+        .char-voice-card:hover, .char-anime-card:hover {
+            border-color: rgba(229, 25, 58, 0.2);
+            transform: translateY(-2px);
+            background: rgba(255,255,255,0.04);
+        }
+
+        .char-actor-photo, .char-anime-thumb {
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(255,255,255,0.08);
+            background: #222;
+        }
+
+        .char-anime-thumb {
+            border-radius: 8px;
+            width: 50px;
+            height: 70px;
+        }
+
+        .char-actor-name, .char-anime-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 80px;
+            line-height: 1.2;
+        }
+
+        .char-actor-lang, .char-anime-role {
+            font-size: 0.64rem;
+            color: var(--text-3);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 80px;
+        }
     </style>
 </head>
 
@@ -1728,7 +1997,45 @@
                     </div>
                 </div>
 
-                <!-- MORE LIKE THIS -->
+                <!-- THEME SONGS -->
+                <div id="themes-section" style="display:none; margin-top:24px;">
+                    <div class="ds-title">Theme Songs</div>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+                        <div id="themes-op" style="background: rgba(255,255,255,0.03); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
+                            <div style="font-size:0.8rem; color:var(--text-3); font-weight:700; margin-bottom:8px; text-transform:uppercase;">Openings</div>
+                            <div id="themes-op-list" style="font-size:0.85rem; color:var(--text-2); display:flex; flex-direction:column; gap:6px;"></div>
+                        </div>
+                        <div id="themes-ed" style="background: rgba(255,255,255,0.03); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
+                            <div style="font-size:0.8rem; color:var(--text-3); font-weight:700; margin-bottom:8px; text-transform:uppercase;">Endings</div>
+                            <div id="themes-ed-list" style="font-size:0.85rem; color:var(--text-2); display:flex; flex-direction:column; gap:6px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COMMUNITY REVIEWS & STATS -->
+                <div id="community-section" style="display:none; margin-top:32px;">
+                    <div class="ds-title" style="display:flex; justify-content:space-between; align-items:center;">
+                        Community Insights
+                        <div class="tabs-container" style="margin:0; width:auto; border:none; padding:0; background:transparent;">
+                            <div class="day-tabs" style="gap:10px;">
+                                <button class="day-tab active" id="tab-reviews" onclick="switchCommunityTab('reviews')" style="padding:6px 12px; font-size:0.8rem; border-radius:15px; border:1px solid rgba(255,255,255,0.1);">Reviews</button>
+                                <button class="day-tab" id="tab-stats" onclick="switchCommunityTab('stats')" style="padding:6px 12px; font-size:0.8rem; border-radius:15px; border:1px solid rgba(255,255,255,0.1);">Stats</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="community-reviews" style="display:flex; flex-direction:column; gap:16px;">
+                        <div class="loader" id="reviews-loader" style="margin:20px auto;"></div>
+                        <div id="reviews-list"></div>
+                    </div>
+
+                    <div id="community-stats" style="display:none; flex-direction:column; gap:16px;">
+                        <div class="loader" id="stats-loader" style="margin:20px auto;"></div>
+                        <div id="stats-content" style="background: rgba(255,255,255,0.03); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);"></div>
+                    </div>
+                </div>
+
+                <!-- MORE LIKE THIS / RECOMMENDATIONS -->
                 <div id="related-section">
                     <div class="ds-title">More Like This</div>
                     <div class="related-grid" id="related-grid"></div>
@@ -1775,6 +2082,14 @@
                     <div class="info-row" id="info-creator" style="display:none">
                         <div class="info-label"><i class="fas fa-user-edit"></i> Creator</div>
                         <div class="info-value" id="info-creator-val"></div>
+                    </div>
+                    <div class="info-row" id="info-source" style="display:none">
+                        <div class="info-label"><i class="fas fa-book-open"></i> Source</div>
+                        <div class="info-value" id="info-source-val"></div>
+                    </div>
+                    <div class="info-row" id="info-demographic" style="display:none">
+                        <div class="info-label"><i class="fas fa-users"></i> Demograph.</div>
+                        <div class="info-value" id="info-demographic-val"></div>
                     </div>
                     <div class="info-row" id="info-network" style="display:none">
                         <div class="info-label"><i class="fas fa-tv"></i> Network</div>
@@ -1957,6 +2272,69 @@
                     console.error('TMDB Enrichment error:', tmdbErr);
                 }
 
+                // ENRICH WITH JIKAN API
+                try {
+                    const searchTitle = cleanTitleForTMDB(animeData.title);
+                    const jikanSearch = await getJson(`/jikan/search?q=${encodeURIComponent(searchTitle)}`, null);
+                    if (jikanSearch && jikanSearch.length > 0) {
+                        const jikanMatch = jikanSearch[0];
+                        if (jikanMatch && jikanMatch.mal_id) {
+                            const malId = jikanMatch.mal_id;
+                            
+                            // Load reviews & stats asynchronously
+                            loadCommunityInsights(malId);
+                            
+                            // Demographics & Source from search result
+                            if (jikanMatch.demographics && jikanMatch.demographics.length > 0) {
+                                animeData.demographics = jikanMatch.demographics.map(d => d.name).join(', ');
+                            }
+                            if (jikanMatch.source) {
+                                animeData.sourceMaterial = jikanMatch.source;
+                            }
+                            if (jikanMatch.studios && jikanMatch.studios.length > 0) {
+                                animeData.jikanStudios = jikanMatch.studios.map(s => ({ name: s.name, id: s.mal_id }));
+                            }
+
+                            // Fetch themes
+                            try {
+                                const themes = await getJson(`/jikan/anime/${malId}/themes`, null);
+                                if (themes) {
+                                    animeData.themes = themes;
+                                }
+                            } catch (e) { console.error('Jikan themes error', e); }
+                            
+                            // Fetch characters
+                            try {
+                                const chars = await getJson(`/jikan/anime/${malId}/characters`, null);
+                                if (chars && chars.length > 0) {
+                                    // Map to the existing cast format so it overrides TMDB
+                                    animeData.cast = chars.slice(0, 15).map(c => ({
+                                        name: c.character?.name,
+                                        character: c.voice_actors?.find(va => va.language === 'Japanese')?.person?.name || c.voice_actors?.[0]?.person?.name || 'Main',
+                                        photo: c.character?.images?.jpg?.image_url,
+                                        id: c.character?.mal_id
+                                    }));
+                                }
+                            } catch (e) { console.error('Jikan characters error', e); }
+
+                            // Fetch recommendations
+                            try {
+                                const recs = await getJson(`/jikan/anime/${malId}/recommendations`, null);
+                                if (recs && recs.length > 0) {
+                                    animeData.jikanRecommendations = recs.slice(0, 12).map(r => ({
+                                        id: r.entry.mal_id, // we don't have gogo id, but we can search it later or just show UI
+                                        title: r.entry.title,
+                                        image: r.entry.images?.jpg?.image_url,
+                                        type: 'series' // Jikan recs are usually series or movies
+                                    }));
+                                }
+                            } catch (e) { console.error('Jikan recs error', e); }
+                        }
+                    }
+                } catch(jikanErr) {
+                    console.error('Jikan Enrichment error:', jikanErr);
+                }
+
                 renderDetailPage();
                 renderRelated();
                 document.getElementById('detail-loading').style.display = 'none';
@@ -2067,13 +2445,21 @@
             if (d.originCountry && d.originCountry.length) { document.getElementById('info-country-val').innerText = d.originCountry.join(', '); document.getElementById('info-country').style.display = 'flex'; }
             if (d.runtime) { document.getElementById('info-dur-val').innerText = d.runtime + 'm'; document.getElementById('info-dur').style.display = 'flex'; }
 
-            // Format studios: join if array, otherwise show string
-            if (d.studios) {
+            // Format studios: link if jikanStudios is available, otherwise join
+            if (d.jikanStudios && d.jikanStudios.length > 0) {
+                const studioHtml = d.jikanStudios.map(s => 
+                    `<a href="studio.html?id=${s.id}&name=${encodeURIComponent(s.name)}" style="color: #ff8090; text-decoration: none; border-bottom: 1px dashed rgba(255,128,144,0.4); transition: color 0.2s;" onmouseover="this.style.color='#ffb3c1'" onmouseout="this.style.color='#ff8090'">${s.name}</a>`
+                ).join(', ');
+                document.getElementById('info-studio-val').innerHTML = studioHtml;
+                document.getElementById('info-studio').style.display = 'flex';
+            } else if (d.studios) {
                 const sText = Array.isArray(d.studios) ? d.studios.join(', ') : d.studios;
                 if (sText) { document.getElementById('info-studio-val').innerText = sText; document.getElementById('info-studio').style.display = 'flex'; }
             }
 
             if (d.creators && d.creators.length) { document.getElementById('info-creator-val').innerText = d.creators.join(', '); document.getElementById('info-creator').style.display = 'flex'; }
+            if (d.sourceMaterial) { document.getElementById('info-source-val').innerText = d.sourceMaterial; document.getElementById('info-source').style.display = 'flex'; }
+            if (d.demographics) { document.getElementById('info-demographic-val').innerText = d.demographics; document.getElementById('info-demographic').style.display = 'flex'; }
             if (d.networks && d.networks.length) { document.getElementById('info-network-val').innerText = d.networks.join(', '); document.getElementById('info-network').style.display = 'flex'; }
 
             if (d.rating) {
@@ -2098,6 +2484,60 @@
                 document.getElementById('info-ext-links').style.display = 'block';
             }
 
+            // Theme Songs
+            if (d.themes && (d.themes.openings?.length || d.themes.endings?.length)) {
+                if (d.themes.openings && d.themes.openings.length) {
+                    document.getElementById('themes-op-list').innerHTML = d.themes.openings.map(op => `<div><i class="fas fa-music" style="font-size:0.7rem; color:var(--text-3); margin-right:6px;"></i>${op}</div>`).join('');
+                } else {
+                    document.getElementById('themes-op').style.display = 'none';
+                }
+                
+                if (d.themes.endings && d.themes.endings.length) {
+                    document.getElementById('themes-ed-list').innerHTML = d.themes.endings.map(ed => `<div><i class="fas fa-music" style="font-size:0.7rem; color:var(--text-3); margin-right:6px;"></i>${ed}</div>`).join('');
+                } else {
+                    document.getElementById('themes-ed').style.display = 'none';
+                }
+                
+                document.getElementById('themes-section').style.display = 'block';
+            }
+
+            // Jikan Recommendations
+            if (d.jikanRecommendations && d.jikanRecommendations.length) {
+                const grid = document.getElementById('related-grid');
+                grid.innerHTML = '';
+                d.jikanRecommendations.forEach(item => {
+                    // Create an aesthetic netflix-like card
+                    // We don't have Gogoanime ID directly, so we'll link to search or just display it
+                    // Actually, let's link to index.html with a search query or a new search mechanism.
+                    // For now, let's use the standard card but click does a search
+                    const a = document.createElement('a');
+                    a.className = 'anime-card';
+                    a.style.textDecoration = 'none';
+                    // Open search with this title
+                    a.onclick = (e) => {
+                        e.preventDefault();
+                        openSearch();
+                        const searchInput = document.getElementById('search-input');
+                        if(searchInput) {
+                            searchInput.value = item.title;
+                            searchInput.dispatchEvent(new Event('input'));
+                        }
+                    };
+                    
+                    a.innerHTML = `
+                        <div class="card-thumb-wrap">
+                            <img class="card-thumb lazy" src="${item.image || ''}" alt="${item.title}">
+                            <div class="card-play-overlay"><i class="fas fa-search"></i></div>
+                        </div>
+                        <div class="card-info">
+                            <h3 class="card-title">${item.title}</h3>
+                        </div>
+                    `;
+                    a.style.minWidth = 'unset';
+                    grid.appendChild(a);
+                });
+            }
+
             // Logo on hero
             if (d.logo) {
                 const logoEl = document.getElementById('d-logo');
@@ -2112,7 +2552,7 @@
             if (d.cast && d.cast.length) {
                 const castRow = document.getElementById('cast-row');
                 castRow.innerHTML = d.cast.map(actor => `
-                    <div class="cast-card">
+                    <div class="cast-card" ${actor.id ? `onclick="openCharacterModal(${actor.id})"` : ''} style="${actor.id ? 'cursor:pointer' : ''}">
                         ${actor.photo
                         ? `<img class="cast-photo" src="${actor.photo}" alt="${actor.name}" loading="lazy" onerror="this.outerHTML='<div class=cast-photo-placeholder><i class=fas fa-user></i></div>'">`
                         : `<div class="cast-photo-placeholder"><i class="fas fa-user"></i></div>`
@@ -2555,9 +2995,12 @@
             });
         }
 
-        // Close trailer modal on ESC
+        // Close modals on ESC
         document.addEventListener('keydown', e => {
-            if (e.key === 'Escape') closeTrailerModal({ type: 'click', target: document.getElementById('trailer-modal'), currentTarget: document.getElementById('trailer-modal') });
+            if (e.key === 'Escape') {
+                closeTrailerModal({ type: 'click', target: document.getElementById('trailer-modal'), currentTarget: document.getElementById('trailer-modal') });
+                closeCharacterModal(null);
+            }
         });
 
         // ── UTILS ────────────────────────────────────────────
@@ -2586,19 +3029,259 @@
         }
 
 
-        // Close trailer modal on ESC key
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') {
-                const modal = document.getElementById('trailer-modal');
-                if (modal && modal.classList.contains('open')) {
-                    document.getElementById('trailer-modal-iframe').src = '';
-                    modal.classList.remove('open');
-                    document.body.style.overflow = '';
-                }
-            }
-        });
+        // --- COMMUNITY INSIGHTS (JIKAN) ---
+        let reviewsLoaded = false;
+        let statsLoaded = false;
 
+        async function loadCommunityInsights(malId) {
+            document.getElementById('community-section').style.display = 'block';
+            if(window.currentMalId !== malId) {
+                window.currentMalId = malId;
+                reviewsLoaded = false;
+                statsLoaded = false;
+                document.getElementById('reviews-list').innerHTML = '';
+                document.getElementById('stats-content').innerHTML = '';
+            }
+            switchCommunityTab('reviews');
+        }
+
+        async function switchCommunityTab(tab) {
+            document.getElementById('tab-reviews').classList.toggle('active', tab === 'reviews');
+            document.getElementById('tab-stats').classList.toggle('active', tab === 'stats');
+            
+            document.getElementById('community-reviews').style.display = tab === 'reviews' ? 'flex' : 'none';
+            document.getElementById('community-stats').style.display = tab === 'stats' ? 'flex' : 'none';
+
+            if (tab === 'reviews' && !reviewsLoaded && window.currentMalId) {
+                loadReviews(window.currentMalId);
+            } else if (tab === 'stats' && !statsLoaded && window.currentMalId) {
+                loadStats(window.currentMalId);
+            }
+        }
+
+        async function loadReviews(malId) {
+            reviewsLoaded = true;
+            document.getElementById('reviews-loader').style.display = 'block';
+            try {
+                const reviews = await getJson(`/jikan/anime/${malId}/reviews`, []);
+                const container = document.getElementById('reviews-list');
+                document.getElementById('reviews-loader').style.display = 'none';
+
+                if (!reviews || reviews.length === 0) {
+                    container.innerHTML = '<p style="color:var(--text-3); font-size:0.9rem;">No reviews available for this title.</p>';
+                    return;
+                }
+
+                container.innerHTML = reviews.slice(0, 5).map(rev => `
+                    <div style="background: rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <img src="${rev.user.images?.jpg?.image_url || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
+                                <div>
+                                    <div style="font-weight:600; font-size:0.95rem;">${rev.user.username}</div>
+                                    <div style="font-size:0.75rem; color:var(--text-3);">${new Date(rev.date).toLocaleDateString()}</div>
+                                </div>
+                            </div>
+                            <div style="background:var(--primary); color:white; padding:4px 8px; border-radius:6px; font-weight:700; font-size:0.85rem; height:fit-content;">
+                                Score: ${rev.score}/10
+                            </div>
+                        </div>
+                        <p style="font-size:0.85rem; line-height:1.6; color:var(--text-2); display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden;">
+                            ${rev.review}
+                        </p>
+                    </div>
+                `).join('');
+            } catch(e) {
+                document.getElementById('reviews-loader').style.display = 'none';
+                document.getElementById('reviews-list').innerHTML = '<p style="color:#ff5050;">Failed to load reviews.</p>';
+            }
+        }
+
+        async function loadStats(malId) {
+            statsLoaded = true;
+            document.getElementById('stats-loader').style.display = 'block';
+            try {
+                const stats = await getJson(`/jikan/anime/${malId}/stats`, null);
+                const container = document.getElementById('stats-content');
+                document.getElementById('stats-loader').style.display = 'none';
+
+                if (!stats || !stats.scores) {
+                    container.innerHTML = '<p style="color:var(--text-3); font-size:0.9rem;">No statistics available.</p>';
+                    return;
+                }
+
+                let maxVotes = Math.max(...stats.scores.map(s => s.votes));
+                if(maxVotes === 0) maxVotes = 1;
+
+                const barsHtml = stats.scores.sort((a,b) => b.score - a.score).map(s => {
+                    const pct = (s.votes / maxVotes) * 100;
+                    return `
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                            <div style="width:20px; font-size:0.8rem; font-weight:600; text-align:right;">${s.score}</div>
+                            <div style="flex:1; height:12px; background:rgba(255,255,255,0.05); border-radius:6px; overflow:hidden;">
+                                <div style="width:${pct}%; height:100%; background:var(--primary); border-radius:6px;"></div>
+                            </div>
+                            <div style="width:50px; font-size:0.75rem; color:var(--text-3); text-align:right;">${(s.percentage || 0).toFixed(1)}%</div>
+                        </div>
+                    `;
+                }).join('');
+
+                container.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+                        <div>
+                            <div style="font-size:0.8rem; color:var(--text-3); text-transform:uppercase; font-weight:600;">Total Votes</div>
+                            <div style="font-size:1.5rem; font-weight:700;">${stats.total.toLocaleString()}</div>
+                        </div>
+                        <div>
+                            <div style="font-size:0.8rem; color:var(--text-3); text-transform:uppercase; font-weight:600;">Watching</div>
+                            <div style="font-size:1.5rem; font-weight:700;">${stats.watching.toLocaleString()}</div>
+                        </div>
+                        <div>
+                            <div style="font-size:0.8rem; color:var(--text-3); text-transform:uppercase; font-weight:600;">Completed</div>
+                            <div style="font-size:1.5rem; font-weight:700;">${stats.completed.toLocaleString()}</div>
+                        </div>
+                    </div>
+                    <div style="margin-top:20px;">
+                        <div style="font-size:0.85rem; font-weight:600; margin-bottom:12px;">Score Distribution</div>
+                        ${barsHtml}
+                    </div>
+                `;
+            } catch(e) {
+                document.getElementById('stats-loader').style.display = 'none';
+                document.getElementById('stats-content').innerHTML = '<p style="color:#ff5050;">Failed to load statistics.</p>';
+            }
+        }
+
+        // --- CHARACTER MODAL FUNCTIONS ---
+        async function openCharacterModal(malId) {
+            const modal = document.getElementById('char-modal');
+            const content = document.getElementById('char-modal-content');
+            
+            modal.classList.add('open');
+            document.body.style.overflow = 'hidden';
+            
+            content.innerHTML = `
+                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:80px 0; gap:16px;">
+                    <div class="loader"></div>
+                    <h3 style="font-family:'Outfit', sans-serif; font-size:1rem; color:var(--text-3);">Loading Character profile...</h3>
+                </div>
+            `;
+            
+            try {
+                const charData = await getJson(`/jikan/character/${malId}`, null);
+                if (!charData) {
+                    content.innerHTML = '<div style="padding:50px; text-align:center; color:#ff5050;">Character information not found.</div>';
+                    return;
+                }
+                
+                const image = charData.images?.jpg?.image_url || charData.images?.webp?.image_url || '';
+                const name = charData.name || 'Unknown Character';
+                const kanji = charData.name_kanji ? `<div class="char-kanji">${charData.name_kanji}</div>` : '';
+                
+                const nicknames = (charData.nicknames || []).map(n => `<span class="char-badge">${n}</span>`).join('');
+                const favs = charData.favorites ? `<span class="char-badge char-badge-fav"><i class="fas fa-heart"></i> ${charData.favorites.toLocaleString()}</span>` : '';
+                
+                const badges = `<div class="char-badge-row">${favs}${nicknames}</div>`;
+                
+                // Voice Actors section
+                let voicesHtml = '';
+                if (charData.voices && charData.voices.length > 0) {
+                    const voiceCards = charData.voices.map(v => `
+                        <div class="char-voice-card">
+                            <img class="char-actor-photo" src="${v.person?.images?.jpg?.image_url || 'https://via.placeholder.com/60'}" alt="${v.person?.name}" loading="lazy">
+                            <div class="char-actor-name" title="${v.person?.name}">${v.person?.name}</div>
+                            <div class="char-actor-lang">${v.language}</div>
+                        </div>
+                    `).join('');
+                    
+                    voicesHtml = `
+                        <div>
+                            <div class="char-section-title"><i class="fas fa-microphone"></i> Voice Actors</div>
+                            <div class="char-voice-row">${voiceCards}</div>
+                        </div>
+                    `;
+                }
+                
+                // Anime roles section
+                let animeHtml = '';
+                if (charData.anime && charData.anime.length > 0) {
+                    const animeCards = charData.anime.slice(0, 15).map(a => `
+                        <div class="char-anime-card">
+                            <img class="char-anime-thumb" src="${a.anime?.images?.jpg?.image_url || 'https://via.placeholder.com/60x80'}" alt="${a.anime?.title}" loading="lazy">
+                            <div class="char-anime-title" title="${a.anime?.title}">${a.anime?.title}</div>
+                            <div class="char-anime-role">${a.role}</div>
+                        </div>
+                    `).join('');
+                    
+                    animeHtml = `
+                        <div>
+                            <div class="char-section-title"><i class="fas fa-film"></i> Other Roles</div>
+                            <div class="char-anime-row">${animeCards}</div>
+                        </div>
+                    `;
+                }
+                
+                // Bio / About section
+                let bioHtml = '';
+                if (charData.about) {
+                    bioHtml = `
+                        <div>
+                            <div class="char-section-title"><i class="fas fa-info-circle"></i> Biography</div>
+                            <div class="char-bio">${charData.about}</div>
+                        </div>
+                    `;
+                } else {
+                    bioHtml = `
+                        <div>
+                            <div class="char-section-title"><i class="fas fa-info-circle"></i> Biography</div>
+                            <div class="char-bio" style="color:var(--text-3); font-style:italic;">No biography available.</div>
+                        </div>
+                    `;
+                }
+                
+                content.innerHTML = `
+                    <div class="char-header">
+                        <div class="char-img-wrap">
+                            <img class="char-img" src="${image}" alt="${name}">
+                        </div>
+                        <div class="char-meta">
+                            <div class="char-title-name">${name}</div>
+                            ${kanji}
+                            ${badges}
+                        </div>
+                    </div>
+                    <div class="char-body">
+                        ${bioHtml}
+                        ${voicesHtml}
+                        ${animeHtml}
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Failed to load character full details:', error);
+                content.innerHTML = '<div style="padding:80px; text-align:center; color:#ff5050;"><i class="fas fa-exclamation-triangle" style="font-size:2rem; margin-bottom:12px;"></i><br>Failed to load character profile. Please try again.</div>';
+            }
+        }
+        
+        function closeCharacterModal(e) {
+            if (e && e.target !== document.getElementById('char-modal')) return;
+            document.getElementById('char-modal').classList.remove('open');
+            document.body.style.overflow = '';
+            setTimeout(() => {
+                document.getElementById('char-modal-content').innerHTML = '';
+            }, 300);
+        }
     </script>
+
+    <!-- CHARACTER DETAIL MODAL -->
+    <div class="char-modal" id="char-modal" onclick="closeCharacterModal(event)">
+        <div class="char-modal-card" onclick="event.stopPropagation()">
+            <button class="char-modal-close" onclick="closeCharacterModal(null)"><i class="fas fa-times"></i></button>
+            <div id="char-modal-content">
+                <!-- Dynamic content loads here -->
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

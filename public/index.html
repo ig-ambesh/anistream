@@ -30,13 +30,21 @@
             <a href="index.html" class="logo">AniStream</a>
             <div class="nav-links">
                 <button onclick="resetHome()" class="active">Home</button>
-                <button onclick="filterContent('series')">Series</button>
-                <button onclick="filterContent('movie')">Movies</button>
+                <button onclick="window.location.href='leaderboards.html'">Leaderboards</button>
+                <button onclick="window.location.href='seasons.html'">Archives</button>
+                <button onclick="window.location.href='schedule.html'">Schedule</button>
                 <button onclick="window.location.href='mylist.html'">My List</button>
             </div>
         </div>
         <div class="nav-right">
-            <button class="search-trigger" onclick="openSearch()" title="Search"><i class="fas fa-search"></i></button>
+            <button class="search-trigger" onclick="playRandomAnime()" title="Surprise Me (Random Highly Rated Anime)" style="margin-right: 5px; border-radius: 50%;"><i class="fas fa-dice"></i></button>
+            
+            <!-- EXPANDING SEARCH BAR -->
+            <div class="nav-search-container" id="nav-search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="search-input" class="nav-search-input" placeholder="Search anime...">
+                <div id="search-results-grid" class="nav-search-dropdown"></div>
+            </div>
             <div id="user-section">
                 <!-- <div id="auth-buttons" style="display:none;">
                     <button onclick="openLoginModal()" class="signin-btn"
@@ -193,22 +201,6 @@
                         Account</button>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- SEARCH OVERLAY -->
-    <div id="search-overlay" class="search-overlay">
-        <div class="search-container">
-            <div class="search-header-bar">
-                <div class="search-input-wrapper">
-                    <i class="fas fa-search search-icon-mobile"></i>
-                    <input type="text" id="search-input" class="search-input" placeholder="Titles, genres...">
-                </div>
-                <button class="close-search-btn" onclick="closeSearch()">Cancel</button>
-            </div>
-            <div class="search-hint" style="margin:12px 0 20px;">Try: <em>Action</em>, <em>Isekai</em>, <em>Romance</em>
-            </div>
-            <div id="search-results-grid" class="search-results-area"></div>
         </div>
     </div>
 
@@ -466,20 +458,27 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=1.3.5"></script>
     <script>
         window.addEventListener('scroll', () => {
             document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 50);
         });
-        function openSearch() {
-            document.getElementById('search-overlay').classList.add('active');
-            setTimeout(() => document.getElementById('search-input')?.focus(), 100);
-        }
-        function closeSearch() {
-            document.getElementById('search-overlay').classList.remove('active');
-            document.getElementById('search-results-grid').innerHTML = '';
-            document.getElementById('search-input').value = '';
-        }
+        // Auto-search via URL params
+        window.addEventListener('DOMContentLoaded', () => {
+            const sq = new URLSearchParams(window.location.search).get('searchQuery');
+            if(sq) {
+                setTimeout(() => {
+                    const container = document.getElementById('nav-search-container');
+                    const input = document.getElementById('search-input');
+                    if(container) container.classList.add('active-search');
+                    if(input) {
+                        input.value = sq;
+                        input.dispatchEvent(new Event('input'));
+                        input.focus();
+                    }
+                }, 500);
+            }
+        });
     </script>
 </body>
 

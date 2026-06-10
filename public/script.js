@@ -49,8 +49,17 @@ function getTimestampMs(value) {
 }
 
 function getLatestHeroItems(items, limit = 6) {
+    // Filter out 18+ anime
+    const safeItems = items.filter(item => {
+        const adultGenres = ['hentai', 'ecchi', 'adult', 'erotica'];
+        const hasAdultGenre = (item.genres || []).some(g => adultGenres.includes(String(g).toLowerCase()));
+        const bannedTitles = ['overflow', 'redo of healer', 'yosuga no sora', 'kiss x sis', 'interspecies reviewers', 'boku no pico'];
+        const isBanned = bannedTitles.some(t => String(item.title).toLowerCase().includes(t));
+        return !item.isAdult && !hasAdultGenre && !isBanned;
+    });
+
     // Filter to keep ONLY trending (ratings >= 7.0) and new (released this year or last year) titles
-    const filtered = items.filter(item => {
+    const filtered = safeItems.filter(item => {
         const rating = parseFloat(item.rating) || 0;
         const year = parseInt(item.year) || 0;
         const currentYear = new Date().getFullYear();
@@ -61,13 +70,13 @@ function getLatestHeroItems(items, limit = 6) {
         return item.tmdbId && (isTrending || isNew);
     });
 
-    const targetItems = filtered.length > 0 ? filtered : items;
+    const targetItems = filtered.length > 0 ? filtered : safeItems;
 
-    // Sort to prioritize absolute newest releases first, then rank by highest rating
+    // Sort by daily trending popularity, fallback to highest rating
     const sorted = [...targetItems].sort((a, b) => {
-        const yearA = parseInt(a.year) || 0;
-        const yearB = parseInt(b.year) || 0;
-        if (yearA !== yearB) return yearB - yearA;
+        const popA = getPopularityValue(a);
+        const popB = getPopularityValue(b);
+        if (popA !== popB) return popB - popA;
         
         const ratingA = parseFloat(a.rating) || 0;
         const ratingB = parseFloat(b.rating) || 0;
@@ -721,20 +730,26 @@ async function loadHomePage() {
     const movieRow = document.getElementById('movie-row'); if(movieRow) movieRow.innerHTML = '';
 
     try {
-        const [trending, recent, moviesData] = await Promise.all([
-            getJson('/tmdb/anime/trending', []),
-            getJson('/tmdb/anime/recent', []),
-            getJson('/gogoanime/anime-movies', [])
+        const [trendingData, seriesData, moviesData, freshData, gemsData, popularData, topRatedData] = await Promise.all([
+            getJson('/jikan/top?filter=airing', []),
+            getJson('/jikan/top?type=tv', []),
+            getJson('/jikan/top?type=movie', []),
+            getJson('/jikan/top?filter=upcoming', []),
+            getJson('/jikan/top?filter=favorite', []),
+            getJson('/jikan/top?filter=bypopularity', []),
+            getJson('/jikan/top', [])
         ]);
 
-        const popMapped = (trending || []).map(i => normalizeTMDBAnimeItem(i, { type: 'series' }));
-        const recMapped = (recent || []).map(i => normalizeTMDBAnimeItem(i, { type: 'series', isRecent: true }));
-        
-        const rawMovies = Array.isArray(moviesData) ? moviesData : (moviesData.animes || []);
-        const movMapped = rawMovies.map(i => normalizeGogoAnimeItem(i, { type: 'movie' }));
+        const trending = (trendingData || []).map(i => normalizeJikanAnimeItem(i));
+        const series = (seriesData || []).map(i => normalizeJikanAnimeItem(i));
+        const movies = (moviesData || []).map(i => normalizeJikanAnimeItem(i));
+        const fresh = (freshData || []).map(i => normalizeJikanAnimeItem(i, { isNew: true }));
+        const gems = (gemsData || []).map(i => normalizeJikanAnimeItem(i));
+        const popular = (popularData || []).map(i => normalizeJikanAnimeItem(i));
+        const topRated = (topRatedData || []).map(i => normalizeJikanAnimeItem(i));
 
         const added = new Set();
-        [...popMapped, ...recMapped, ...movMapped].forEach(item => {
+        [...trending, ...series, ...movies, ...fresh, ...gems, ...popular, ...topRated].forEach(item => {
             if (!added.has(item.id)) {
                 added.add(item.id);
                 allContentCache.push(item);
@@ -743,22 +758,23 @@ async function loadHomePage() {
 
         const displayContent = incognitoActive ? getIncognitoContent(allContentCache) : getNormalContent(allContentCache);
         resetHome();
-        renderHeroSlider(getLatestHeroItems(displayContent));
         
-        // Populate Rows
-        renderGrid(getCuratedRowItems(displayContent, { limit: 12 }), mainRow);
+        // Render hero slider using top trending airing anime
+        renderHeroSlider(trending.slice(0, 6));
         
-        const seriesRow = document.getElementById('series-row');
-        if (seriesRow) renderGrid(getCuratedRowItems(displayContent, { type: 'series', limit: 12 }), seriesRow);
+        // Populate Grid Rows
+        renderGrid(trending.slice(0, 12), mainRow);
+        
+        if (seriesRow) renderGrid(series.slice(0, 12), seriesRow);
         
         const movieRow = document.getElementById('movie-row');
-        if (movieRow) renderGrid(getCuratedRowItems(displayContent, { type: 'movie', limit: 12 }), movieRow);
+        if (movieRow) renderGrid(movies.slice(0, 12), movieRow);
         
         const freshRow = document.getElementById('fresh-row');
-        if (freshRow) renderGrid(recMapped, freshRow);
+        if (freshRow) renderGrid(fresh.slice(0, 12), freshRow);
         
         const gemsRow = document.getElementById('gems-row');
-        if (gemsRow) renderGrid(getCuratedRowItems(displayContent, { limit: 12 }).reverse(), gemsRow);
+        if (gemsRow) renderGrid(gems.slice(0, 12), gemsRow);
 
         renderPersonalizedRow();
         refreshSidebarModules();
@@ -783,7 +799,7 @@ function renderHeroSlider(items) {
         const genreBadges = genres.map(g => `<span class="hero-badge badge-genre">${g}</span>`).join('');
         const labelBadge = `<span class="hero-badge badge-match">${getHeroLabel(data, index)}</span>`;
         slidesHTML += `
-            <div class="swiper-slide" style="--bg-pc: url('${desktopImg}'); --bg-mobile: url('${mobileImg}'); --hero-accent: ${(data.type || '').toLowerCase() === 'movie' ? 'rgba(255, 180, 87, 0.22)' : 'rgba(229, 9, 20, 0.24)'};">
+            <div class="swiper-slide" data-slide-index="${index}" style="background-image: url('${desktopImg}'); --bg-pc: url('${desktopImg}'); --bg-mobile: url('${mobileImg}'); --hero-accent: ${(data.type || '').toLowerCase() === 'movie' ? 'rgba(255, 180, 87, 0.22)' : 'rgba(229, 9, 20, 0.24)'};">
                 <div class="hero-overlay"></div>
                 <div class="hero-content">
                     <div class="hero-badges">
@@ -794,7 +810,9 @@ function renderHeroSlider(items) {
                         ${rating ? `<span class="hero-badge badge-rating">${rating}</span>` : ''}
                         ${genreBadges}
                     </div>
-                    <h1 class="hero-title" title="${escapeHtml(data.title)}">${heroTitle}</h1>
+                    <div data-hero-index="${index}" class="hero-title-wrapper">
+                        <h1 class="hero-title" title="${escapeHtml(data.title)}">${heroTitle}</h1>
+                    </div>
                     <p class="hero-desc">${getHeroDescription(data)}</p>
                     <div class="hero-btns">
                         <button class="btn-primary" onclick="window.location.href='watch.html?anime=${data.id}&season=0&ep=0'"><i class="fas fa-play"></i> Play</button>
@@ -821,6 +839,46 @@ function renderHeroSlider(items) {
         autoplay: { delay: 6000, disableOnInteraction: false },
         pagination: { el: ".swiper-pagination", clickable: true },
         navigation: { nextEl: ".swiper-button-next", prevEl: ".swiper-button-prev" }
+    });
+
+    // Fetch and display logos and backdrops for hero items asynchronously
+    items.forEach((data, index) => {
+        let tmdbIdPromise = data.tmdbId ? Promise.resolve(data.tmdbId) : 
+            getJson('/tmdb/search?q=' + encodeURIComponent(data.title), []).then(res => {
+                if (res && res.length > 0) {
+                    return res[0].id;
+                }
+                return null;
+            });
+
+        tmdbIdPromise.then(tmdbId => {
+            if (tmdbId) {
+                const typeParam = (data.type || '').toLowerCase() === 'movie' ? 'movie' : 'tv';
+                getJson(`/tmdb/info/${tmdbId}?type=${typeParam}`, null).then(info => {
+                    const logoPath = info?.images?.logos?.[0]?.file_path;
+                    const backdropPath = info?.images?.backdrops?.[0]?.file_path || info?.backdrop_path;
+
+                    if (logoPath) {
+                        const wrappers = document.querySelectorAll(`[data-hero-index="${index}"]`);
+                        wrappers.forEach(wrapper => {
+                            const logoUrl = 'https://image.tmdb.org/t/p/w500' + logoPath;
+                            wrapper.innerHTML = `<img src="${logoUrl}" alt="${escapeHtml(data.title)}" class="hero-logo" style="width: 100%; max-width: 400px; height: auto; max-height: 140px; object-fit: contain; object-position: left; margin-bottom: 12px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.8));">`;
+                        });
+                    }
+                    
+                    if (backdropPath) {
+                        const slides = document.querySelectorAll(`.swiper-slide[data-slide-index="${index}"]`);
+                        slides.forEach(slide => {
+                            const backdropUrl = 'https://image.tmdb.org/t/p/original' + backdropPath;
+                            slide.style.backgroundImage = `url('${backdropUrl}')`;
+                            slide.style.setProperty('--bg-pc', `url('${backdropUrl}')`);
+                            // Keep mobile image as poster if preferred, or use backdrop:
+                            slide.style.setProperty('--bg-mobile', `url('${backdropUrl}')`);
+                        });
+                    }
+                }).catch(() => {});
+            }
+        });
     });
 }
 
@@ -870,10 +928,39 @@ function normalizeTMDBAnimeItem(item, options = {}) {
         language: 'Sub',
         year: (item.first_air_date || item.release_date || '').split('-')[0] || '',
         rating: item.vote_average ? String(item.vote_average.toFixed(1)) : '',
+        popularity: item.popularity || 0,
+        isAdult: item.adult === true,
         genres: [],
         type,
         timestamp: options.isRecent ? Date.now() : Date.now() - (Math.random() * 10000000),
         description: item.overview || 'Enjoy this anime on AniStream.',
+        seasons: [{ episodes: [] }]
+    };
+}
+
+function normalizeJikanAnimeItem(item, options = {}) {
+    const id = `jikan-${item.mal_id}`;
+    const image = item.images?.jpg?.large_image_url || item.images?.jpg?.image_url || '';
+    const title = item.title_english || item.title || 'Untitled Anime';
+    const rating = item.score ? String(item.score) : '';
+    const genres = (item.genres || []).map(g => g.name);
+    const type = String(item.type || '').toLowerCase().includes('movie') ? 'movie' : 'series';
+    const year = item.year || (item.aired?.prop?.from?.year) || '';
+    
+    return {
+        id,
+        title,
+        image,
+        banner: image,
+        tmdbId: null,
+        language: 'Sub',
+        year,
+        rating,
+        genres,
+        type,
+        popularity: item.members || 0,
+        _isNew: options.isNew || false,
+        description: item.synopsis || 'Enjoy this anime on AniStream.',
         seasons: [{ episodes: [] }]
     };
 }
@@ -1223,48 +1310,144 @@ function createSearchListRow(data) {
 let searchRequestToken = 0;
 let searchDebounceTimer = null;
 
+let currentSearchQuery = '';
+let currentSearchPage = 1;
+let isSearchFetching = false;
+let hasMoreSearchResults = true;
+let searchSeenIds = new Set();
+
+const searchGrid = document.getElementById('search-results-grid');
+
+// Expanding Search UI Logic
+const searchContainer = document.getElementById('nav-search-container');
+const searchInputElem = document.getElementById('search-input');
+
+if (searchContainer && searchInputElem) {
+    // Open on container click
+    searchContainer.addEventListener('click', () => {
+        searchContainer.classList.add('active-search');
+        searchInputElem.focus();
+    });
+
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+        if (!searchContainer.contains(e.target)) {
+            searchContainer.classList.remove('active-search');
+            if(searchGrid) searchGrid.classList.remove('show');
+        }
+    });
+
+    // Handle escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            searchContainer.classList.remove('active-search');
+            if(searchGrid) searchGrid.classList.remove('show');
+            searchInputElem.blur();
+        }
+    });
+}
+
 document.getElementById?.('search-input')?.addEventListener('input', (e) => {
-    const grid = document.getElementById('search-results-grid');
     const query = e.target.value.toLowerCase().trim();
-    grid.innerHTML = '';
+    
+    currentSearchQuery = query;
+    currentSearchPage = 1;
+    hasMoreSearchResults = true;
+    searchSeenIds.clear();
+    searchGrid.innerHTML = '';
+
+    // Show dropdown if there is input
+    if (query.length > 0 && searchGrid) {
+        searchGrid.classList.add('show');
+    } else if (searchGrid) {
+        searchGrid.classList.remove('show');
+    }
+
     if (query.length < 2) return;
-    grid.innerHTML = '<p style="color:#777;padding:25px 0;text-align:center;width:100%;font-size:1.1rem;"><i class="fas fa-spinner fa-spin" style="margin-right:8px;color:var(--primary);"></i>Searching for your favorite titles...</p>';
+    
+    searchGrid.innerHTML = '<p id="search-loading-msg" style="color:#777;padding:25px 0;text-align:center;width:100%;font-size:1.1rem;"><i class="fas fa-spinner fa-spin" style="margin-right:8px;color:var(--primary);"></i>Searching for your favorite titles...</p>';
 
     clearTimeout(searchDebounceTimer);
     const requestToken = ++searchRequestToken;
-    searchDebounceTimer = setTimeout(async () => {
-        const sourceItems = getNormalContent(allContentCache);
-        const localResults = sourceItems.filter(item =>
-            item.title?.toLowerCase().includes(query) ||
-            (item.genres || []).some(g => g.toLowerCase().includes(query)) ||
-            item.description?.toLowerCase().includes(query)
-        );
+    searchDebounceTimer = setTimeout(() => fetchSearchResults(query, requestToken, 1), 300);
+});
 
-        const apiData = await getJson(`/gogoanime/search?keyword=${encodeURIComponent(query)}&page=1`, { animes: [] });
-        if (requestToken !== searchRequestToken) return;
+async function fetchSearchResults(query, token, page) {
+    if(isSearchFetching || !hasMoreSearchResults) return;
+    isSearchFetching = true;
+
+    try {
+        let localResults = [];
+        if(page === 1) {
+            const sourceItems = getNormalContent(allContentCache);
+            localResults = sourceItems.filter(item =>
+                item.title?.toLowerCase().includes(query) ||
+                (item.genres || []).some(g => g.toLowerCase().includes(query)) ||
+                item.description?.toLowerCase().includes(query)
+            );
+            
+            // Instantly render local matches for zero latency feel!
+            if (localResults.length > 0) {
+                const loadingMsg = document.getElementById('search-loading-msg');
+                if(loadingMsg) loadingMsg.remove();
+                
+                localResults.forEach(item => {
+                    if (!searchSeenIds.has(item.id)) {
+                        searchSeenIds.add(item.id);
+                        searchGrid.appendChild(createSearchListRow(item));
+                    }
+                });
+            }
+        }
+
+        const apiData = await getJson(`/gogoanime/search?keyword=${encodeURIComponent(query)}&page=${page}`, { animes: [] });
+        if (token !== searchRequestToken) {
+            isSearchFetching = false;
+            return;
+        }
 
         const apiResults = (apiData.animes || apiData || []).map(item => normalizeGogoAnimeItem(item));
-        const seen = new Set();
-        const results = [...apiResults, ...localResults].filter(item => {
-            if (!item.id || seen.has(item.id)) return false;
-            seen.add(item.id);
+        
+        if(apiResults.length < 10) { // Assuming <10 means last page
+            hasMoreSearchResults = false;
+        }
+
+        const results = apiResults.filter(item => {
+            if (!item.id || searchSeenIds.has(item.id)) return false;
+            searchSeenIds.add(item.id);
             return true;
         });
 
-        grid.innerHTML = '';
-        if (!results.length) {
-            grid.innerHTML = '<p style="color:#555;padding:30px 0;text-align:center;width:100%;font-size:1.1rem;"><i class="fas fa-search" style="margin-right:8px;"></i>No matching titles found.</p>';
-            return;
-        }
-        results.forEach(item => grid.appendChild(createSearchListRow(item)));
-    }, 250);
-});
+        // Remove loading message if exists
+        const loadingMsg = document.getElementById('search-loading-msg');
+        if(loadingMsg) loadingMsg.remove();
 
-// Allow ESC to close search
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        const overlay = document.getElementById('search-overlay');
-        if (overlay?.classList.contains('active')) closeSearch?.();
+        if (page === 1 && localResults.length === 0 && !results.length) {
+            searchGrid.innerHTML = '<p style="color:#555;padding:30px 0;text-align:center;width:100%;font-size:1.1rem;"><i class="fas fa-search" style="margin-right:8px;"></i>No matching titles found.</p>';
+        } else {
+            results.forEach(item => searchGrid.appendChild(createSearchListRow(item)));
+        }
+    } catch(err) {
+        console.error("Search fetch error:", err);
+    }
+
+    isSearchFetching = false;
+}
+
+// Infinite scroll listener for search
+searchGrid?.addEventListener('scroll', () => {
+    if(!isSearchFetching && hasMoreSearchResults && currentSearchQuery.length >= 2) {
+        if(searchGrid.scrollTop + searchGrid.clientHeight >= searchGrid.scrollHeight - 100) {
+            currentSearchPage++;
+            
+            // Add a temporary loading spinner for the next page
+            const loader = document.createElement('div');
+            loader.id = 'search-loading-msg';
+            loader.innerHTML = '<p style="color:#777;padding:15px 0;text-align:center;width:100%;"><i class="fas fa-circle-notch fa-spin"></i> Loading more...</p>';
+            searchGrid.appendChild(loader);
+
+            fetchSearchResults(currentSearchQuery, searchRequestToken, currentSearchPage);
+        }
     }
 });
 
@@ -1307,9 +1490,27 @@ async function initPlayer() {
             getJson(`/gogoanime/anime/${dubId}`, null)
         ]);
 
+        let hindiData = null;
+        if (subData || dubData) {
+            const titleToSearch = (subData || dubData).animeTitle || (subData || dubData).name || '';
+            console.log("Searching hindidub for title:", titleToSearch);
+            try {
+                // Try searching the Hindi scraper
+                const searchResults = await getJson(`/hindidub/search?keyword=${encodeURIComponent(titleToSearch)}`, null);
+                console.log("Hindidub search results:", searchResults);
+                if (searchResults && searchResults.animes && searchResults.animes.length > 0) {
+                    const bestMatch = searchResults.animes[0].id;
+                    hindiData = await getJson(`/hindidub/anime/${bestMatch}`, null);
+                    console.log("Hindidub anime data:", hindiData);
+                }
+            } catch (e) {
+                console.error("Failed to fetch hindi sources", e);
+            }
+        }
+
         if (!subData && !dubData) return;
 
-        const mainData = subData || dubData;
+        const mainData = subData || dubData || hindiData;
         const mappedData = {
             id: subId,
             title: mainData.animeTitle || mainData.name,
@@ -1322,17 +1523,20 @@ async function initPlayer() {
 
         const subEpisodes = subData ? subData.episodes || [] : [];
         const dubEpisodes = dubData ? dubData.episodes || [] : [];
+        const hindiEpisodes = hindiData ? hindiData.episodes || [] : [];
         
-        const maxEp = Math.max(subEpisodes.length, dubEpisodes.length);
+        const maxEp = Math.max(subEpisodes.length, dubEpisodes.length, hindiEpisodes.length);
         for (let i = 1; i <= maxEp; i++) {
             const subEp = subEpisodes.find(e => e.episodeNo == i);
             const dubEp = dubEpisodes.find(e => e.episodeNo == i);
+            const hinEp = hindiEpisodes.find(e => e.episode == i || e.episodeNo == i);
             
             mappedData.seasons[0].episodes.push({
-                title: subEp?.title || dubEp?.title || `Episode ${i}`,
+                title: subEp?.title || dubEp?.title || hinEp?.title || `Episode ${i}`,
                 episodeNo: i,
                 subEpisodeId: subEp?.episodeId || null,
-                dubEpisodeId: dubEp?.episodeId || null
+                dubEpisodeId: dubEp?.episodeId || null,
+                hindiEpisodeId: hinEp?.episodeId || null
             });
         }
 
@@ -1476,7 +1680,7 @@ function _transformEmbedUrl(url) {
 
 let currentHls = null;
 
-window.loadVideo = function(url) {
+window.loadVideo = async function(url) {
     if (!url) return;
     const iframe = document.getElementById('video-player');
     const video = document.getElementById('video-html-player');
@@ -1485,6 +1689,20 @@ window.loadVideo = function(url) {
     if (currentHls) {
         currentHls.destroy();
         currentHls = null;
+    }
+
+    if (url.includes('/hindidub/extract')) {
+        try {
+            const data = await getJson(url, null);
+            if (data && data.videoUrl) {
+                return window.loadVideo(data.videoUrl); // Recurse with real URL
+            } else {
+                // fallback to some player page or show error
+                url = new URLSearchParams(url.split('?')[1]).get('url') || url;
+            }
+        } catch(e) {
+            url = new URLSearchParams(url.split('?')[1]).get('url') || url;
+        }
     }
 
     if (url.includes('.m3u8')) {
@@ -1519,6 +1737,11 @@ window.loadVideo = function(url) {
 
 function normalizeServerLanguage(type, fallbackLang) {
     const value = String(type || '').toUpperCase();
+    if (value.includes('HINDI')) return 'HINDI';
+    if (value.includes('TAMIL')) return 'TAMIL';
+    if (value.includes('TELUGU')) return 'TELUGU';
+    if (value.includes('ENGLISH')) return 'ENGLISH';
+    if (value.includes('JAPANESE')) return 'JAPANESE';
     if (value.includes('DUB')) return 'DUB';
     if (value.includes('SUB') || value.includes('HSUB')) return 'SUB';
     return String(fallbackLang || 'SUB').toUpperCase();
@@ -1539,12 +1762,23 @@ window.renderServerSwitcher = function(partitions) {
     container.innerHTML = '';
     let activeSet = false;
 
-    ['SUB', 'DUB'].forEach(lang => {
+    const supportedLangs = ['SUB', 'DUB', 'HINDI', 'TAMIL', 'TELUGU', 'ENGLISH', 'JAPANESE'];
+
+    supportedLangs.forEach(lang => {
         const servers = partitions[lang];
         if (!servers || !servers.length) return;
 
-        const labelText = lang === 'SUB' ? 'Sub:' : 'Dub:';
-        const icon = lang === 'SUB' ? 'fa-closed-captioning' : 'fa-microphone';
+        const icons = {
+            'SUB': 'fa-closed-captioning',
+            'DUB': 'fa-microphone',
+            'HINDI': 'fa-language',
+            'TAMIL': 'fa-language',
+            'TELUGU': 'fa-language',
+            'ENGLISH': 'fa-globe-americas',
+            'JAPANESE': 'fa-globe-asia'
+        };
+        const icon = icons[lang] || 'fa-server';
+        const labelText = lang === 'SUB' || lang === 'DUB' ? lang.charAt(0) + lang.slice(1).toLowerCase() + ':' : lang;
 
         const row = document.createElement('div');
         row.className = `nw-server-row ${lang.toLowerCase()}-server-row`;
@@ -1596,7 +1830,7 @@ async function playEpisode(sIdx, eIdx) {
     if (htmlVp) { htmlVp.pause(); htmlVp.src = ''; }
 
     const preferred = localStorage.getItem('anistream_priority') || 'sub';
-    let partitions = { 'SUB': [], 'DUB': [] };
+    let partitions = { 'SUB': [], 'DUB': [], 'HINDI': [], 'TAMIL': [], 'TELUGU': [], 'ENGLISH': [], 'JAPANESE': [] };
 
     const addServerToPartition = (bucket, server) => {
         if (!server?.url) return;
@@ -1619,7 +1853,8 @@ async function playEpisode(sIdx, eIdx) {
                     name: server.name || 'Server',
                     normalizedName,
                     priority,
-                    url: server.url
+                    url: server.url,
+                    player: server.player // pass the player type
                 };
             }
         } else if (servers.length < 10) {
@@ -1627,14 +1862,15 @@ async function playEpisode(sIdx, eIdx) {
                 name: server.name || 'Server',
                 normalizedName,
                 priority,
-                url: server.url
+                url: server.url,
+                player: server.player
             });
         }
         bucket[lang] = servers;
     };
 
     const mergePartitions = (incoming) => {
-        ['SUB', 'DUB'].forEach(lang => {
+        Object.keys(incoming).forEach(lang => {
             (incoming[lang] || []).forEach(server => {
                 addServerToPartition(partitions, { ...server, language: lang });
             });
@@ -1691,6 +1927,29 @@ async function playEpisode(sIdx, eIdx) {
         } catch(e) { return buckets; }
     };
 
+    const fetchHindiSources = async (hindiEpisodeId) => {
+        const buckets = { 'HINDI': [], 'TAMIL': [], 'TELUGU': [], 'ENGLISH': [], 'JAPANESE': [] };
+        if (!hindiEpisodeId) return buckets;
+        console.log("Fetching Hindi sources for:", hindiEpisodeId);
+        try {
+            const isMovie = (currentAnimeData?.type || '').toLowerCase() === 'movie';
+            const data = await getJson(`/hindidub/episode-srcs?id=${encodeURIComponent(hindiEpisodeId)}&movie=${isMovie}`, {});
+            console.log("Hindi sources data:", data);
+            if (Array.isArray(data.streams)) {
+                data.streams.forEach(s => {
+                    addServerToPartition(buckets, {
+                        name: s.player === 'zephyrflick' ? 'Stream (Fast)' : 'Embed',
+                        url: s.player === 'zephyrflick' ? `/hindidub/extract?url=${encodeURIComponent(s.url)}` : s.url,
+                        language: normalizeServerLanguage(s.type, 'HINDI'),
+                        sourceType: s.type,
+                        player: s.player // so we can know if we need to call extract endpoint
+                    });
+                });
+            }
+            return buckets;
+        } catch(e) { console.error("Error fetching hindi sources:", e); return buckets; }
+    };
+
     try {
         const pLang = preferred.toUpperCase();
         let sLang = pLang === 'SUB' ? 'DUB' : 'SUB';
@@ -1718,8 +1977,22 @@ async function playEpisode(sIdx, eIdx) {
                 }
             });
         }
+        
+        // Fetch Hindi/Indian language sources
+        if (ep.hindiEpisodeId) {
+            fetchHindiSources(ep.hindiEpisodeId).then(hindiPartitions => {
+                mergePartitions(hindiPartitions);
+                const hasActiveServer = Object.values(partitions).flat().some(server => server.isDefault);
+                if (!hasActiveServer) {
+                    // Try to pick Hindi if no sub/dub existed
+                    chooseAndLoadDefault('HINDI');
+                } else {
+                    window.renderServerSwitcher(partitions);
+                }
+            });
+        }
 
-        if (!pId && !sId) {
+        if (!pId && !sId && !ep.hindiEpisodeId) {
              if (disclaimer) disclaimer.style.display = 'flex';
         }
 
@@ -2340,3 +2613,31 @@ if (_searchInput) {
 
 // Initialize incognito state on page load
 document.addEventListener('DOMContentLoaded', checkIncognitoState);
+
+// ==========================================
+// 12. RANDOM ANIME FEATURE
+// ==========================================
+function playRandomAnime() {
+    const sourceItems = getNormalContent(allContentCache);
+    
+    // Filter items with good rating
+    let goodAnimes = sourceItems.filter(item => {
+        if(!item.id) return false;
+        let rating = item.vote_average || item.rating || 0;
+        return parseFloat(rating) >= 7.5;
+    });
+
+    // Fallback to all items if cache is empty of high ratings
+    if(goodAnimes.length === 0) {
+        goodAnimes = sourceItems.filter(item => item.id);
+    }
+    
+    if(goodAnimes.length === 0) {
+        return;
+    }
+
+    const randomItem = goodAnimes[Math.floor(Math.random() * goodAnimes.length)];
+    
+    // Instantly navigate to details page
+    window.location.href = `detail.html?anime=${randomItem.id}`;
+}

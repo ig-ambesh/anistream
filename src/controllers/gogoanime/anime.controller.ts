@@ -61,6 +61,58 @@ export const getAnimeInfo: RequestHandler = async (req, res) => {
           id = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
         }
       }
+    } else if (id.startsWith("jikan-")) {
+      const malId = id.replace("jikan-", "");
+      const { getAnimeFull } = require("../../lib/jikan");
+      let jikanDetails = null;
+      try {
+        jikanDetails = await getAnimeFull(malId);
+      } catch (e) {
+        console.error("Failed to fetch Jikan details in controller:", e);
+      }
+      
+      if (jikanDetails) {
+        const title = jikanDetails.title_english || jikanDetails.title || "";
+        const { scrapeSearchPage } = require("../../scrapers/gogoanime/search");
+        
+        let foundId = "";
+        
+        // 1. Try full title search
+        try {
+          const searchResults = await scrapeSearchPage(title, 1);
+          if (searchResults && searchResults.animes && searchResults.animes.length > 0) {
+            foundId = searchResults.animes[0].id;
+          }
+        } catch (e) {
+          // ignore search errors
+        }
+        
+        // 2. Try subtitle splitting
+        if (!foundId && (title.includes(":") || title.includes("-") || title.includes("–") || title.includes("("))) {
+          const parts = title.split(/[:\-–(]/);
+          const cleanTitle = parts[0].trim();
+          if (cleanTitle.length > 2) {
+            try {
+              const searchResults = await scrapeSearchPage(cleanTitle, 1);
+              if (searchResults && searchResults.animes && searchResults.animes.length > 0) {
+                const movieMatch = searchResults.animes.find((a: any) => 
+                  a.name.toLowerCase().includes("movie") || 
+                  a.id.toLowerCase().includes("movie")
+                );
+                foundId = movieMatch ? movieMatch.id : searchResults.animes[0].id;
+              }
+            } catch (e) {
+              // ignore search errors
+            }
+          }
+        }
+        
+        if (foundId) {
+          id = foundId;
+        } else {
+          id = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+        }
+      }
     }
 
     const data = await scrapeAnimeInfo(id);
