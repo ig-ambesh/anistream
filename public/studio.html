@@ -231,10 +231,12 @@
 
                 grid.innerHTML = '';
                 data.forEach(item => {
+                    const title = item.title_english || item.title || 'Untitled Anime';
+                    
                     const card = document.createElement('div');
                     card.className = 'content-card';
                     card.style.position = 'relative';
-                    card.onclick = () => window.location.href = `detail.html?anime=${encodeURIComponent(item.title)}`;
+                    card.onclick = () => window.location.href = `detail.html?anime=${encodeURIComponent(title)}`;
                     
                     let scoreHtml = '';
                     if(item.score) {
@@ -242,9 +244,9 @@
                     }
                     
                     card.innerHTML = `
-                        <img src="${item.images?.jpg?.large_image_url || item.images?.jpg?.image_url}" class="card-img" alt="${item.title}" loading="lazy">
+                        <img src="${item.images?.jpg?.large_image_url || item.images?.jpg?.image_url}" class="card-img" alt="${title}" loading="lazy">
                         <div class="card-overlay">
-                            <div class="card-title">${item.title}</div>
+                            <div class="card-title">${title}</div>
                             <div class="card-meta">
                                 ${scoreHtml}
                                 <span><i class="fas fa-tv"></i> ${item.type || 'TV'}</span>

@@ -350,17 +350,19 @@
                     const rank = index + 1;
                     const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : '';
                     
+                    const title = item.title_english || item.title || 'Untitled Anime';
+                    
                     const card = document.createElement('div');
                     card.className = 'content-card';
                     card.style.position = 'relative';
                     // We try to search Gogoanime when clicked, or open detail with MAL info
-                    card.onclick = () => window.location.href = `detail.html?anime=${encodeURIComponent(item.title)}`;
+                    card.onclick = () => window.location.href = `detail.html?anime=${encodeURIComponent(title)}`;
                     
                     card.innerHTML = `
                         <div class="rank-badge ${rankClass}">#${rank}</div>
-                        <img src="${item.images?.jpg?.large_image_url || item.images?.jpg?.image_url}" class="card-img" alt="${item.title}" loading="lazy">
+                        <img src="${item.images?.jpg?.large_image_url || item.images?.jpg?.image_url}" class="card-img" alt="${title}" loading="lazy">
                         <div class="card-overlay">
-                            <div class="card-title">${item.title}</div>
+                            <div class="card-title">${title}</div>
                             <div class="card-meta">
                                 <span><i class="fas fa-star" style="color:#f5c518"></i> ${item.score || 'N/A'}</span>
                                 <span><i class="fas fa-users"></i> ${(item.members / 1000).toFixed(1)}k</span>
