@@ -9,6 +9,8 @@
     { "source": "/gogoanime/(.*)", "destination": "src/server.ts" },
     { "source": "/aniwatch/(.*)", "destination": "src/server.ts" },
     { "source": "/tmdb/(.*)", "destination": "src/server.ts" },
+    { "source": "/jikan/(.*)", "destination": "src/server.ts" },
+    { "source": "/hindidub/(.*)", "destination": "src/server.ts" },
     { "source": "/status", "destination": "src/server.ts" },
     { "source": "/health", "destination": "src/server.ts" },
     { "source": "/(.*)", "destination": "/public/$1" }
