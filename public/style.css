@@ -122,10 +122,6 @@ nav.scrolled {
 
 .profile-dropdown .dropdown-divider { height: 1px; background: rgba(255,255,255,0.05); margin: 2px 12px; }
 
-.profile-dropdown .dropdown-item.logout-item { color: #ff5050; }
-.profile-dropdown .dropdown-item.logout-item:hover { background: rgba(229,9,20,0.08); }
-.profile-dropdown .dropdown-item.logout-item i { color: #ff5050; }
-
 /* ENHANCED EDIT PROFILE MODAL */
 .profile-modal-box {
     background: #18181b; border-radius: 20px; width: 95%; max-width: 440px;
@@ -167,6 +163,45 @@ nav.scrolled {
     padding: 8px 12px; background: rgba(255,255,255,0.03); border: var(--border);
     border-radius: 9px; color: #555; font-size: 0.88rem; cursor: not-allowed;
 }
+
+/* Profile History Tab */
+.history-status-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+.history-status-chip {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    color: #888; padding: 6px 12px; border-radius: 20px; font-size: 0.72rem;
+    font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: 'Outfit', sans-serif;
+    display: flex; align-items: center; gap: 5px; white-space: nowrap;
+}
+.history-status-chip:hover { background: rgba(255,255,255,0.08); color: #ccc; }
+.history-status-chip.active { background: var(--primary-dim); border-color: var(--primary); color: white; }
+.history-status-chip i { font-size: 0.68rem; }
+.profile-history-list {
+    max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
+}
+.profile-history-list::-webkit-scrollbar { width: 4px; }
+.profile-history-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+.ph-item {
+    display: flex; align-items: center; gap: 12px; padding: 10px;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 10px; cursor: pointer; transition: all 0.2s;
+}
+.ph-item:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.1); }
+.ph-item-poster { width: 42px; height: 58px; border-radius: 6px; object-fit: cover; flex-shrink: 0; background: #1a1a20; }
+.ph-item-info { flex: 1; min-width: 0; }
+.ph-item-title { font-size: 0.82rem; font-weight: 600; color: #e0e0e5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ph-item-meta { font-size: 0.7rem; color: #555; margin-top: 3px; display: flex; align-items: center; gap: 8px; }
+.ph-item-ep { color: var(--primary); font-weight: 600; }
+.ph-status-select {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+    color: #ccc; padding: 5px 8px; border-radius: 6px; font-size: 0.68rem;
+    font-weight: 600; font-family: 'Outfit', sans-serif; cursor: pointer;
+    outline: none; flex-shrink: 0;
+}
+.ph-status-select:focus { border-color: var(--primary); }
+.ph-status-select option { background: #1a1a1e; color: #ccc; }
+.ph-empty { text-align: center; padding: 40px 20px; color: #444; }
+.ph-empty i { font-size: 2rem; margin-bottom: 10px; display: block; color: #333; }
+.ph-empty p { font-size: 0.85rem; }
 
 .profile-account-stats {
     display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px;
@@ -1530,424 +1565,99 @@ nav.scrolled {
     .section-header { align-items: center; }
 }
 
+
 /* =========================================
-   8. INCOGNITO MODE
+   AUTH MODALS — Login & Signup
    ========================================= */
-
-/* Toggle Section in Security */
-.incognito-toggle-section {
-    margin-bottom: 20px;
-    padding: 16px;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 14px;
-    transition: 0.3s;
+.auth-modal-overlay {
+    backdrop-filter: blur(16px) saturate(180%);
 }
-.incognito-toggle-section:hover {
-    border-color: rgba(255,255,255,0.1);
-}
-.incognito-toggle-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-}
-.incognito-toggle-label {
-    font-size: 0.92rem;
-    font-weight: 700;
-    color: #e0e0e5;
-    display: flex;
-    align-items: center;
-}
-.incognito-toggle-desc {
-    font-size: 0.72rem;
-    color: #555;
-    margin-top: 4px;
-}
-
-/* Toggle Switch */
-.incognito-switch {
-    position: relative;
-    display: inline-block;
-    width: 48px;
-    height: 26px;
-    flex-shrink: 0;
-}
-.incognito-switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-.incognito-slider {
-    position: absolute;
-    cursor: pointer;
-    inset: 0;
-    background: #2a2a2e;
-    border-radius: 26px;
-    transition: 0.3s;
+.auth-modal-box {
+    background: linear-gradient(145deg, rgba(24,24,28,0.98), rgba(18,18,22,0.99));
     border: 1px solid rgba(255,255,255,0.08);
-}
-.incognito-slider::before {
-    content: '';
-    position: absolute;
-    height: 20px;
-    width: 20px;
-    left: 2px;
-    bottom: 2px;
-    background: #666;
-    border-radius: 50%;
-    transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-.incognito-switch input:checked + .incognito-slider {
-    background: linear-gradient(135deg, #7c3aed, #06b6d4);
-    border-color: rgba(124, 58, 237, 0.4);
-    box-shadow: 0 0 16px rgba(124, 58, 237, 0.3);
-}
-.incognito-switch input:checked + .incognito-slider::before {
-    transform: translateX(22px);
-    background: white;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-}
-
-/* Incognito Password Modal */
-.incognito-modal-box {
-    background: #18181b;
     border-radius: 24px;
-    width: 95%;
-    max-width: 380px;
-    border: 1px solid rgba(255,255,255,0.06);
-    box-shadow: 0 30px 80px rgba(0,0,0,0.8), 0 0 80px rgba(124, 58, 237, 0.08);
+    width: 92%; max-width: 420px; padding: 0;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.04), 0 0 60px rgba(229,9,20,0.08);
     animation: modalIn 0.3s var(--ease-spring);
-    padding: 32px 28px;
-    text-align: center;
+    position: relative; overflow: hidden;
 }
-.incognito-modal-icon {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(6, 182, 212, 0.15));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 16px;
-    font-size: 1.5rem;
-    color: #a78bfa;
-    border: 1px solid rgba(124, 58, 237, 0.2);
+.auth-modal-box::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--primary), #ff6b81, var(--primary));
+    border-radius: 24px 24px 0 0;
 }
-.incognito-modal-title {
-    font-size: 1.3rem;
-    font-weight: 800;
-    color: white;
-    margin-bottom: 6px;
+.auth-modal-close {
+    position: absolute; top: 16px; right: 16px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+    color: #666; cursor: pointer; font-size: 0.95rem;
+    width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s ease; z-index: 10;
 }
-.incognito-modal-desc {
-    font-size: 0.82rem;
-    color: #666;
-    margin-bottom: 24px;
+.auth-modal-close:hover {
+    color: white; background: rgba(229,9,20,0.15);
+    border-color: rgba(229,9,20,0.3); transform: rotate(90deg);
 }
-.incognito-pin-container {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-    margin-bottom: 18px;
+.auth-form-view { padding: 40px 32px 32px; }
+.auth-modal-icon {
+    width: 56px; height: 56px; border-radius: 16px;
+    background: linear-gradient(135deg, rgba(229,9,20,0.15), rgba(229,9,20,0.05));
+    border: 1px solid rgba(229,9,20,0.2);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px; font-size: 1.3rem; color: var(--primary);
+    box-shadow: 0 8px 24px rgba(229,9,20,0.1);
 }
-.incognito-pin-input {
-    width: 44px !important;
-    height: 52px !important;
-    text-align: center;
-    font-size: 1.3rem;
-    font-weight: 800;
-    background: #222226 !important;
-    border: 1px solid rgba(255,255,255,0.08) !important;
-    border-radius: 12px !important;
-    color: white;
-    outline: none;
-    transition: 0.2s;
-    caret-color: #a78bfa;
-    padding: 0 !important;
-    margin: 0 !important;
+.auth-modal-title { font-size: 1.5rem; font-weight: 800; color: white; margin-bottom: 6px; letter-spacing: -0.3px; }
+.auth-modal-desc { color: #777; font-size: 0.88rem; margin-bottom: 28px; line-height: 1.5; }
+.auth-field { margin-bottom: 18px; }
+.auth-field label {
+    display: block; font-size: 0.75rem; font-weight: 700; color: #888;
+    text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 7px;
 }
-.incognito-pin-input:focus {
-    border-color: #7c3aed !important;
-    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15), 0 0 20px rgba(124, 58, 237, 0.1) !important;
+.auth-field .modal-input {
+    margin-bottom: 0; padding: 13px 16px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px; font-size: 0.9rem; transition: all 0.2s ease;
 }
-.incognito-pin-input.error-shake {
-    border-color: #ef4444 !important;
-    animation: pinShake 0.4s ease;
+.auth-field .modal-input:focus {
+    background: rgba(255,255,255,0.06); border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(229,9,20,0.12);
 }
-@keyframes pinShake {
-    0%, 100% { transform: translateX(0); }
-    20% { transform: translateX(-6px); }
-    40% { transform: translateX(6px); }
-    60% { transform: translateX(-4px); }
-    80% { transform: translateX(4px); }
+.auth-field .modal-input::placeholder { color: #555; }
+.auth-error {
+    background: rgba(229,9,20,0.08); border: 1px solid rgba(229,9,20,0.2);
+    color: #ff8090; padding: 10px 14px; border-radius: 10px;
+    font-size: 0.82rem; font-weight: 500; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
 }
-.incognito-error {
-    color: #f87171;
-    font-size: 0.8rem;
-    font-weight: 600;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
+.auth-error::before {
+    content: '\f071'; font-family: 'Font Awesome 6 Free';
+    font-weight: 900; font-size: 0.75rem; flex-shrink: 0;
 }
-.incognito-modal-actions {
-    display: flex;
-    gap: 10px;
+.auth-submit-btn {
+    width: 100%; padding: 14px 20px !important;
+    border-radius: 12px !important; font-size: 0.95rem !important;
+    font-weight: 700 !important; letter-spacing: 0.3px;
+    display: flex !important; align-items: center; justify-content: center; gap: 8px;
+    transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1) !important;
+    box-shadow: 0 6px 20px rgba(229,9,20,0.3); margin-top: 8px;
 }
-.incognito-confirm-btn {
-    background: linear-gradient(135deg, #7c3aed, #06b6d4) !important;
-}
-.incognito-confirm-btn:hover {
-    box-shadow: 0 8px 25px rgba(124, 58, 237, 0.3) !important;
-}
-
-/* =========================================
-   9. INCOGNITO THEME OVERRIDE
-   ========================================= */
-body.incognito-mode {
-    --primary: #7c3aed;
-    --primary-glow: rgba(124, 58, 237, 0.25);
-    --primary-dim: rgba(124, 58, 237, 0.12);
-    --accent: #06b6d4;
-    --bg-main: #0a0a10;
-    --bg-card: #12121a;
-    --bg-panel: #0e0e16;
-    --bg-glass: rgba(10, 10, 16, 0.97);
-}
-
-body.incognito-mode .logo {
-    color: #7c3aed;
-    text-shadow: 0 0 30px rgba(124, 58, 237, 0.25);
-}
-body.incognito-mode .logo:hover {
-    text-shadow: 0 0 50px rgba(124, 58, 237, 0.25), 0 0 80px rgba(124, 58, 237, 0.15);
-}
-
-body.incognito-mode .signin-btn {
-    background: #7c3aed;
-}
-body.incognito-mode .signin-btn:hover {
-    background: #06b6d4;
-    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.25);
-}
-
-body.incognito-mode .profile-wrapper:hover img {
-    border-color: #7c3aed;
-    box-shadow: 0 0 15px rgba(124, 58, 237, 0.25);
-}
-
-body.incognito-mode .badge-genre {
-    background: rgba(124, 58, 237, 0.12);
-    color: #c4b5fd;
-    border: 1px solid rgba(124, 58, 237, 0.2);
-}
-
-body.incognito-mode .swiper-pagination-bullet-active {
-    background: linear-gradient(90deg, #ffffff 0%, #7c3aed 100%) !important;
-    box-shadow: 0 0 18px rgba(124, 58, 237, 0.3);
-}
-
-body.incognito-mode .btn-next {
-    background: #7c3aed;
-    box-shadow: 0 8px 25px rgba(124, 58, 237, 0.25);
-}
-body.incognito-mode .btn-next:hover {
-    background: #06b6d4;
-    box-shadow: 0 10px 35px rgba(6, 182, 212, 0.35);
-}
-
-body.incognito-mode .genre-chip.active {
-    background: rgba(124, 58, 237, 0.12);
-    border-color: rgba(124, 58, 237, 0.4);
-}
-
-body.incognito-mode .card-top-badge {
-    background: #7c3aed;
-}
-body.incognito-mode .card-top-badge.new-badge {
-    background: #06b6d4;
-}
-
-body.incognito-mode .section-title span {
-    color: #7c3aed;
-}
-
-body.incognito-mode ::-webkit-scrollbar-thumb:hover {
-    background: #7c3aed;
-}
-
-body.incognito-mode .most-viewed-item:hover {
-    border-color: rgba(124, 58, 237, 0.2);
-    background: rgba(124, 58, 237, 0.07);
-}
-
-body.incognito-mode .sidebar-panel {
-    background:
-        radial-gradient(circle at top right, rgba(124, 58, 237, 0.16), transparent 34%),
-        linear-gradient(180deg, rgba(18,18,22,0.96), rgba(10,10,14,0.98));
-}
-
-body.incognito-mode .sidebar-divider {
-    background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(124, 58, 237, 0.18), rgba(255,255,255,0.02));
-}
-
-body.incognito-mode .sidebar-panel-kicker {
-    color: #c4b5fd;
-}
-
-body.incognito-mode .sidebar-pick-badge {
-    background: rgba(124, 58, 237, 0.88);
-}
-
-body.incognito-mode .sidebar-genre-chip:hover {
-    background: rgba(124, 58, 237, 0.12);
-    border-color: rgba(124, 58, 237, 0.24);
-}
-
-body.incognito-mode .profile-tab.active {
-    background: rgba(124, 58, 237, 0.12);
-}
-
-body.incognito-mode .profile-avatar-preview {
-    border-color: rgba(124, 58, 237, 0.3);
-}
-
-body.incognito-mode .profile-stat-card .p-stat-val {
-    color: #7c3aed;
-}
-
-body.incognito-mode .toast {
-    border-left-color: #7c3aed;
-}
-
-body.incognito-mode .btn-glass.active-heart {
-    color: #7c3aed;
-    border-color: rgba(124, 58, 237, 0.4);
-    background: rgba(124, 58, 237, 0.12);
-}
-
-body.incognito-mode .ep-card.active {
-    background: rgba(124, 58, 237, 0.08);
-    border-color: rgba(124, 58, 237, 0.25);
-}
-
-body.incognito-mode .ep-card.active .ep-index {
-    color: #7c3aed;
-}
-
-body.incognito-mode .ep-play-icon {
-    color: #7c3aed;
-}
-
-body.incognito-mode .history-progress-fill {
-    background: #7c3aed;
-}
-
-body.incognito-mode nav.scrolled {
-    background: rgba(10,10,16,0.97);
-}
-
-body.incognito-mode .nav-item.active {
-    color: #c4b5fd;
-}
-
-body.incognito-mode .home-footer {
-    background:
-        radial-gradient(circle at top right, rgba(124, 58, 237, 0.12), transparent 32%),
-        linear-gradient(180deg, rgba(20,20,24,0.92), rgba(10,10,14,0.96));
-}
-
-body.incognito-mode .footer-creator {
-    background: linear-gradient(90deg, #c4b5fd 0%, #7c3aed 25%, #a5f3fc 50%, #06b6d4 75%, #c4b5fd 100%);
-    background-size: 220% auto;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    filter: drop-shadow(0 0 8px rgba(124, 58, 237, 0.28));
-}
-
-body.incognito-mode .footer-heart {
-    color: #c4b5fd;
-    filter: drop-shadow(0 0 10px rgba(124, 58, 237, 0.32));
-}
-
-body.incognito-mode .hero-overlay {
-    background: linear-gradient(90deg, rgba(10,10,16,0.96) 0%, rgba(10,10,16,0.76) 34%, rgba(10,10,16,0.22) 72%, transparent 100%),
-                linear-gradient(0deg, rgba(10,10,16,1) 0%, rgba(10,10,16,0.42) 42%, transparent 100%);
-}
-
-body.incognito-mode .modal-input:focus {
-    border-color: #7c3aed;
-    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
-}
-
-body.incognito-mode .btn-save {
-    background: #7c3aed;
-}
-body.incognito-mode .btn-save:hover {
-    background: #06b6d4;
-}
-
-body.incognito-mode .scroll-btn:hover {
-    background: #7c3aed;
-    border-color: #7c3aed;
-}
-
-body.incognito-mode .video-container-glow {
-    box-shadow: 0 0 60px rgba(124, 58, 237, 0.12), 0 30px 80px rgba(0,0,0,0.8);
-}
-body.incognito-mode .video-container-glow:hover {
-    box-shadow: 0 0 80px rgba(124, 58, 237, 0.2), 0 30px 80px rgba(0,0,0,0.8);
-}
-
-/* Incognito indicator badge on navbar */
-body.incognito-mode .logo::after {
-    content: 'INCOGNITO';
-    font-family: 'Outfit', sans-serif;
-    font-size: 0.52rem;
-    font-weight: 800;
-    letter-spacing: 1.5px;
-    color: #c4b5fd;
-    background: rgba(124, 58, 237, 0.12);
-    border: 1px solid rgba(124, 58, 237, 0.25);
-    padding: 3px 8px;
-    border-radius: 999px;
-    margin-left: 10px;
-    vertical-align: middle;
-}
-
-/* Smooth transition for theme changes */
-body, body * {
-    transition: background-color 0.3s ease, border-color 0.3s ease;
-}
-
-/* Mobile override for incognito */
-@media (max-width: 900px) {
-    body.incognito-mode .hero-overlay {
-        background: linear-gradient(to top, var(--bg-main) 5%, rgba(10,10,16,0.5) 50%, transparent 100%) !important;
-    }
-    body.incognito-mode .bottom-nav {
-        background: rgba(10,10,16,0.98);
-    }
+.auth-submit-btn:hover { transform: translateY(-2px) !important; box-shadow: 0 10px 30px rgba(229,9,20,0.45) !important; }
+.auth-submit-btn:active { transform: scale(0.98) !important; }
+.auth-submit-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none !important; }
+.auth-switch-text { text-align: center; margin-top: 20px; font-size: 0.85rem; color: #666; }
+.auth-switch-text a { color: var(--primary); text-decoration: none; font-weight: 700; transition: color 0.2s; }
+.auth-switch-text a:hover { color: var(--accent); text-decoration: underline; }
+#auth-buttons { display: flex; gap: 8px; align-items: center; }
+#auth-buttons .signin-btn { font-size: 0.82rem; padding: 7px 18px; border-radius: 8px; font-weight: 600; transition: all 0.2s ease; }
+@media (max-width: 500px) {
+    .auth-form-view { padding: 32px 20px 24px; }
+    .auth-modal-title { font-size: 1.3rem; }
+    .auth-modal-box { width: 96%; border-radius: 20px; }
 }
 
 
 
 
-}
 
- . s e a s o n - p i l l - b t n . u n a v a i l a b l e   { 
-         o p a c i t y :   0 . 5 ; 
-         c u r s o r :   n o t - a l l o w e d ; 
-         b a c k g r o u n d :   r g b a ( 2 5 5 , 2 5 5 , 2 5 5 , 0 . 0 2 ) ; 
-         b o r d e r - c o l o r :   r g b a ( 2 5 5 , 2 5 5 , 2 5 5 , 0 . 0 5 ) ; 
- } 
- . s e a s o n - p i l l - b t n . u n a v a i l a b l e : h o v e r   { 
-         t r a n s f o r m :   n o n e ; 
-         b o x - s h a d o w :   n o n e ; 
-         b o r d e r - c o l o r :   r g b a ( 2 5 5 , 2 5 5 , 2 5 5 , 0 . 0 5 ) ; 
- } 
-  
- 
+}

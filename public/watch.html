@@ -10,6 +10,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <style>
         :root {
             --wp-bg: #0b0b14;
@@ -599,6 +603,19 @@
                 item.innerHTML = `<span class="ep-item-num">${i + 1}</span><span class="ep-item-title">${ep.title || 'Episode ' + (i+1)}</span>`;
                 item.onclick = () => playEpisode(sIdx, i);
                 container.appendChild(item);
+            });
+            const badge = document.getElementById('ep-total-badge');
+            if (badge) badge.textContent = `(${eps.length})`;
+        }
+
+        function filterEps() {
+            const query = (document.getElementById('ep-search')?.value || '').toLowerCase().trim();
+            const items = document.querySelectorAll('#ep-list-scroll .ep-item');
+            items.forEach(item => {
+                const num = item.querySelector('.ep-item-num')?.textContent || '';
+                const title = item.querySelector('.ep-item-title')?.textContent || '';
+                const match = !query || num.includes(query) || title.toLowerCase().includes(query);
+                item.style.display = match ? '' : 'none';
             });
         }
 

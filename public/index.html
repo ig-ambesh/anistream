@@ -20,6 +20,10 @@
     <link rel="stylesheet" href="style.css?v=1.3.0">
     <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');</script>
     <link rel="shortcut icon" href="./favicon.ico" type="image/x-icon">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 
 <body>
@@ -46,11 +50,11 @@
                 <div id="search-results-grid" class="nav-search-dropdown"></div>
             </div>
             <div id="user-section">
-                <!-- <div id="auth-buttons" style="display:none;">
+                <div id="auth-buttons" style="display:none;">
                     <button onclick="openLoginModal()" class="signin-btn"
                         style="background:transparent;border:1px solid rgba(255,255,255,0.2);">Log In</button>
                     <button onclick="openSignupModal()" class="signin-btn">Sign Up</button>
-                </div> -->
+                </div>
                 <div id="profile-wrapper" class="profile-wrapper" style="display:none;">
                     <img id="user-avatar" src="" alt="Profile" onclick="toggleProfileDropdown(event)">
                     <div class="profile-dropdown">
@@ -62,12 +66,10 @@
                             </div>
                         </div>
                         <div class="dropdown-menu-section">
-                            <button class="dropdown-item" onclick="openEditProfile()"><i class="fas fa-user-pen"></i>
-                                Edit Profile</button>
-                            <button class="dropdown-item" onclick="window.location.href='mylist.html'"><i
-                                    class="fas fa-heart"></i> My List</button>
-                            <button class="dropdown-item" onclick="openEditProfile('security')"><i
-                                    class="fas fa-shield-halved"></i> Security</button>
+                            <button class="dropdown-item" onclick="openEditProfile()"><i class="fas fa-user-pen"></i> Edit Profile</button>
+                            <button class="dropdown-item" onclick="openHistoryModal()"><i class="fas fa-history"></i> Watch History</button>
+                            <button class="dropdown-item" onclick="window.location.href='mylist.html'"><i class="fas fa-heart"></i> My List</button>
+                            <button class="dropdown-item" onclick="openEditProfile('security')"><i class="fas fa-shield-halved"></i> Security</button>
                             <div class="dropdown-divider"></div>
                             <button class="dropdown-item logout-item" onclick="logout()"><i
                                     class="fas fa-sign-out-alt"></i> Log Out</button>
@@ -125,20 +127,6 @@
                 <p style="color:#666;font-size:0.85rem;margin-bottom:18px;">Update your password to keep your account
                     secure.</p>
 
-                <!-- Incognito Mode Toggle -->
-                <div class="incognito-toggle-section">
-                    <div class="incognito-toggle-row">
-                        <div class="incognito-toggle-info">
-                            <div class="incognito-toggle-label"><i class="fas fa-user-secret"
-                                    style="margin-right:8px;color:#888;"></i>Incognito Mode</div>
-                            <div class="incognito-toggle-desc">Private browsing with restricted content</div>
-                        </div>
-                        <label class="incognito-switch" id="incognito-switch-label">
-                            <input type="checkbox" id="incognito-toggle" onchange="handleIncognitoToggle(this)">
-                            <span class="incognito-slider"></span>
-                        </label>
-                    </div>
-                </div>
 
                 <div class="profile-field-group">
                     <label class="profile-field-label">Current Password</label>
@@ -204,6 +192,29 @@
         </div>
     </div>
 
+    <!-- WATCH HISTORY MODAL -->
+    <div id="watch-history-modal" class="modal-overlay">
+        <div class="profile-modal-box" style="max-width: 600px; width: 95%;">
+            <div class="profile-modal-header">
+                <h3><i class="fas fa-history" style="color:var(--primary);margin-right:8px;"></i> Watch History</h3>
+                <button class="profile-modal-close" onclick="closeHistoryModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="profile-tab-content active" style="padding-top: 10px;">
+                <div class="history-status-bar">
+                    <button class="history-status-chip active" onclick="filterProfileHistory('all', this)">All</button>
+                    <button class="history-status-chip" onclick="filterProfileHistory('watching', this)"><i class="fas fa-play-circle"></i> Watching</button>
+                    <button class="history-status-chip" onclick="filterProfileHistory('completed', this)"><i class="fas fa-check-circle"></i> Completed</button>
+                    <button class="history-status-chip" onclick="filterProfileHistory('on-hold', this)"><i class="fas fa-pause-circle"></i> On Hold</button>
+                    <button class="history-status-chip" onclick="filterProfileHistory('plan-to-watch', this)"><i class="fas fa-clock"></i> Plan to Watch</button>
+                    <button class="history-status-chip" onclick="filterProfileHistory('dropped', this)"><i class="fas fa-times-circle"></i> Dropped</button>
+                </div>
+                <div class="profile-history-list" id="profile-history-list" style="max-height: 500px;">
+                    <p style="color:#555;font-size:0.85rem;text-align:center;padding:30px 0;">Loading your watch history...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- HERO -->
     <div id="hero-section" class="hero-wrapper">
         <div class="skeleton" style="width:100%;height:100%;border-radius:0;"></div>
@@ -233,8 +244,9 @@
                 <!-- CONTINUE WATCHING -->
                 <div id="continue-watching-row" style="display:none;">
                     <div class="section-header">
-                        <h3 class="section-title">Continue Watching</h3>
+                        <h3 class="section-title" style="cursor:pointer;" onclick="openHistoryModal()">Continue Watching <i class="fas fa-external-link-alt" style="font-size:0.7rem; margin-left:5px; opacity:0.5;"></i></h3>
                         <div style="display:flex; gap:8px; align-items:center;">
+                            <button onclick="openHistoryModal()" style="background:rgba(255,255,255,0.05); color:#ccc; border:none; padding:4px 10px; border-radius:12px; font-size:0.75rem; cursor:pointer; margin-right:5px; transition:0.2s;" onmouseover="this.style.color='#fff'; this.style.background='var(--primary-dim)'" onmouseout="this.style.color='#ccc'; this.style.background='rgba(255,255,255,0.05)'">See All</button>
                             <button class="nav-arrow-btn"
                                 onclick="document.getElementById('history-grid').scrollBy({left:-350, behavior:'smooth'})"><i
                                     class="fas fa-chevron-left"></i></button>
@@ -422,41 +434,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
-    <!-- INCOGNITO PASSWORD MODAL -->
-    <div id="incognito-modal" class="modal-overlay">
-        <div class="incognito-modal-box">
-            <div class="incognito-modal-icon">
-                <i class="fas fa-user-secret"></i>
-            </div>
-            <h3 class="incognito-modal-title">Enter Access Code</h3>
-            <p class="incognito-modal-desc">Enter your 6-digit passcode to continue</p>
-            <div class="incognito-pin-container" id="incognito-pin-container">
-                <input type="password" maxlength="1" class="incognito-pin-input" data-index="0" inputmode="numeric"
-                    pattern="[0-9]" autocomplete="off">
-                <input type="password" maxlength="1" class="incognito-pin-input" data-index="1" inputmode="numeric"
-                    pattern="[0-9]" autocomplete="off">
-                <input type="password" maxlength="1" class="incognito-pin-input" data-index="2" inputmode="numeric"
-                    pattern="[0-9]" autocomplete="off">
-                <input type="password" maxlength="1" class="incognito-pin-input" data-index="3" inputmode="numeric"
-                    pattern="[0-9]" autocomplete="off">
-                <input type="password" maxlength="1" class="incognito-pin-input" data-index="4" inputmode="numeric"
-                    pattern="[0-9]" autocomplete="off">
-                <input type="password" maxlength="1" class="incognito-pin-input" data-index="5" inputmode="numeric"
-                    pattern="[0-9]" autocomplete="off">
-            </div>
-            <div class="incognito-error" id="incognito-error" style="display:none;">
-                <i class="fas fa-exclamation-triangle"></i> Incorrect passcode
-            </div>
-            <div class="incognito-modal-actions">
-                <button class="modal-btn btn-cancel" onclick="closeIncognitoModal()"
-                    style="flex:1;padding:12px;border-radius:10px;">Cancel</button>
-                <button class="modal-btn btn-save incognito-confirm-btn" onclick="confirmIncognitoCode()"
-                    style="flex:1;padding:12px;border-radius:10px;">
-                    <i class="fas fa-lock-open" style="margin-right:6px;"></i>Unlock
-                </button>
-            </div>
-        </div>
-    </div>
 
     <script src="script.js?v=1.3.5"></script>
     <script>
